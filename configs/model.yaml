@@ -1,0 +1,4 @@
+model:
+  in_dim: 64
+  hidden: 128
+  layers: 3

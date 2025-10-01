@@ -1,0 +1,8 @@
+FROM python:3.11-slim
+WORKDIR /workspace
+RUN apt-get update && apt-get install -y build-essential cmake git && rm -rf /var/lib/apt/lists/*
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+RUN python setup.py build_ext --inplace
+CMD ["/bin/bash"]
