@@ -1,0 +1,31 @@
+# state_point_rahman: rho*=0.8177 T*=0.7880 (Rahman 1964, Phys. Rev. 136, A405)
+# state_point_verlet: rho*=0.8442 T*=0.7280 (Verlet 1967, Phys. Rev. 159, 98)
+# git_sha: f5f126c
+# host: Darwin arm64
+# units: reduced Lennard-Jones units (sigma = epsilon = m = 1)
+# cells: 6 (N=864)
+# cutoff: 2.5
+# skin: 0.3
+# dt: 0.005
+# equilibrate_steps: 5000 (Langevin)
+# production_steps: 2000 (NVE)
+# n_replicas_per_state_point: 8
+# error_bars: standard error of the mean across independent replicas (see script header)
+# tolerance: |mean(D_msd) - mean(D_vacf)| <= se(D_msd) + se(D_vacf), per state point
+label,rho_star,T_star,seed,D_msd,D_vacf
+rahman,0.8177,0.7880,4001,0.04348640538,0.04985667131
+rahman,0.8177,0.7880,4002,0.04702101314,0.05016826176
+rahman,0.8177,0.7880,4003,0.04579885539,0.05073391564
+rahman,0.8177,0.7880,4004,0.04512365825,0.04586280321
+rahman,0.8177,0.7880,4005,0.04859565149,0.05031512309
+rahman,0.8177,0.7880,4006,0.04487100462,0.04889786768
+rahman,0.8177,0.7880,4007,0.04414117756,0.04189071599
+rahman,0.8177,0.7880,4008,0.04372582561,0.04612471519
+verlet,0.8442,0.7280,4101,0.03247364525,0.03250219795
+verlet,0.8442,0.7280,4102,0.03559672225,0.0349688507
+verlet,0.8442,0.7280,4103,0.03994995169,0.04665368608
+verlet,0.8442,0.7280,4104,0.04234643049,0.04970291672
+verlet,0.8442,0.7280,4105,0.02889857934,0.03123306092
+verlet,0.8442,0.7280,4106,0.03927150515,0.04093369836
+verlet,0.8442,0.7280,4107,0.03311406518,0.03353256349
+verlet,0.8442,0.7280,4108,0.03367041493,0.03737861717
