@@ -7,6 +7,7 @@ set(MOLDYN_SOURCES
   neighbor/cell_list.cpp
   neighbor/verlet_list.cpp
   integrate/velocity_verlet.cpp
+  integrate/langevin.cpp
   util/lattice.cpp
 )
 
