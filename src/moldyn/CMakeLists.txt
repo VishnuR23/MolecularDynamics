@@ -8,6 +8,7 @@ set(MOLDYN_SOURCES
   neighbor/verlet_list.cpp
   integrate/velocity_verlet.cpp
   integrate/langevin.cpp
+  integrate/nose_hoover.cpp
   util/lattice.cpp
 )
 
