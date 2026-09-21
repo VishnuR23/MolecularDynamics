@@ -39,6 +39,59 @@ long-range correction, LFS = linear force shift at the cutoff.
 Our LJ conventions (unshifted truncation, undivided virial sum) were verified
 against all 12 published values above.
 
+## Lennard-Jones fluid equation of state
+
+Unlike `lj/` and `spce/` above, this is not a downloaded reference-config
+file (there is none to download -- NIST's page presents this table
+directly in HTML). Nothing is stored under `data/nist/` for it; the
+quoted table below is copied here verbatim as the provenance record.
+
+Used by experiment 05 (`experiments/exp05_lj_eos.sh`) to compare our
+simulated pressure and potential energy against NIST's own published values,
+rather than a digitised plot from a paper.
+
+- Source: https://www.nist.gov/mml/csd/chemical-informatics-group/lennard-jones-fluid-properties,
+  MD results table at https://mmlapps.nist.gov/srs/LJ_PURE/md.htm
+- Retrieved: 2026-09-21
+
+This page tabulates only one MD isotherm with both U* and p* reported
+together (its EOS-TMMC page has a much finer density grid but pressure
+only, no energy, so it cannot be used for a direct U* comparison). We use
+that one isotherm exactly as published, at NIST's own state points, rather
+than picking our own density grid and interpolating.
+
+Stated methodology (quoted from the page): method NVE molecular dynamics,
+integrator velocity-Verlet, time step 0.005 t*, N = 500, truncation "3σ +
+standard long range corrections", equilibration >50 t*, production 100 t*.
+"Standard long range corrections are included in the tabulated values of
+energy and pressure. ... The reported pressure was calculated using the
+virial expression." This is exactly our `--truncation truncated` convention
+with the analytic LJ tail correction applied to both potential energy and
+pressure (moldyn_run commit c277bb2), so the two are directly comparable
+with no unit or convention conversion.
+
+The standard uncertainty in the last digit is quoted in parentheses,
+obtained from block averages of length 2-4 time units (67% confidence).
+
+### Reference values (reduced units, sigma = epsilon = m = 1, rc* = 3.0)
+
+| T* | rho* | U* | p* | D* |
+|---|---|---|---|---|
+| 0.851(1) | 0.776 | -5.517(1) | 0.030(6) | 0.061 |
+| 0.853(1) | 0.780 | -5.533(1) | 0.072(5) | 0.063 |
+| 0.852(1) | 0.820 | -5.803(1) | 0.573(5) | 0.048 |
+| 0.851(1) | 0.840 | -5.909(1) | 0.910(6) | 0.042 |
+| 0.849(1) | 0.860 | -6.027(1) | 1.282(5) | 0.035 |
+| 0.851(1) | 0.900 | -6.234(1) | 2.544(6) | 0.027 |
+
+We run our own simulation at each of these six (T*, rho*) pairs with
+N = 500 (fcc, 5 cells/side), rc* = 3.0, dt = 0.005, matching NIST's own
+protocol as closely as our CLI allows (Langevin equilibration to target T*,
+then NVE production; NIST's equilibration method is unspecified beyond
+">50 t*"). See `experiments/exp05_lj_eos.sh` for the exact commands and
+`results/exp05_lj_eos.csv` for our measured values and their deviation from
+this table.
+
 ## SPC/E water (`spce/`)
 
 - Source: https://www.nist.gov/mml/csd/chemical-informatics-research-group/spce-water-reference-calculations-10a-cutoff

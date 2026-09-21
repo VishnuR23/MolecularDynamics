@@ -21,3 +21,15 @@ jobs:
 
       - name: Test
         run: ctest --test-dir build --output-on-failure
+
+      # Only experiments 01 and 02 run in CI (both take seconds): the NIST
+      # energy/virial table and the velocity-Verlet dt^2 convergence check.
+      # Experiments 03-05 (argon RDF, diffusion, LJ EOS) take minutes and
+      # are left to `make reproduce`. These two scripts assert their own
+      # numeric thresholds and exit non-zero on failure -- no Python is
+      # needed here, only moldyn_run and awk.
+      - name: Experiment 01 (NIST energy/virial table)
+        run: bash experiments/exp01_nist_table.sh
+
+      - name: Experiment 02 (energy conservation order)
+        run: bash experiments/exp02_energy_conservation.sh

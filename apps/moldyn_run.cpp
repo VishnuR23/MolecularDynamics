@@ -64,6 +64,7 @@ const char* kUsage =
     "  moldyn_run --cells N --density RHO --temperature T --cutoff RC\n"
     "             --skin S --dt DT --equilibrate STEPS --production STEPS\n"
     "             --thermostat none|langevin|nose-hoover --seed S\n"
+    "             [--truncation truncated|linear-force-shift]\n"
     "             [--rdf-out PATH] [--msd-out PATH] [--thermo-out PATH]\n"
     "             [--traj-out PATH]\n"
     "\n"
@@ -81,6 +82,13 @@ const char* kUsage =
     "  --production STEPS   steps of NVE or NVT production\n"
     "  --thermostat KIND    none|langevin|nose-hoover (production phase)\n"
     "  --seed S             RNG seed (required for anything stochastic)\n"
+    "  --truncation KIND    truncated|linear-force-shift (default: truncated).\n"
+    "                       truncated: plain cutoff, energy discontinuous at\n"
+    "                       rc, long-range corrected in thermo-out. Use for\n"
+    "                       thermodynamics. linear-force-shift: force shifted\n"
+    "                       to zero at rc, continuous, no LRC term -- isolates\n"
+    "                       the integrator's own error from the cutoff\n"
+    "                       discontinuity. Use to study integrator order.\n"
     "  --rdf-out PATH       write g(r) as CSV\n"
     "  --msd-out PATH       write MSD and VACF as CSV\n"
     "  --thermo-out PATH    write per-step energy, temperature, pressure as CSV\n"
@@ -92,9 +100,9 @@ const char* kUsage =
 }
 
 const std::vector<std::string> kKnownFlags = {
-    "--nist-config", "--cells",     "--density",   "--temperature", "--cutoff",
-    "--skin",        "--dt",        "--equilibrate", "--production", "--thermostat",
-    "--seed",        "--rdf-out",   "--msd-out",   "--thermo-out",  "--traj-out",
+    "--nist-config", "--cells",       "--density",   "--temperature", "--cutoff",
+    "--skin",        "--dt",          "--equilibrate", "--production", "--thermostat",
+    "--seed",        "--truncation",  "--rdf-out",   "--msd-out",   "--thermo-out",  "--traj-out",
 };
 
 std::map<std::string, std::string> parseArgs(int argc, char** argv) {
@@ -173,6 +181,14 @@ ThermostatKind parseThermostat(const std::string& value) {
     if (value == "nose-hoover") return ThermostatKind::NoseHoover;
     printUsageAndExit("--thermostat must be one of none|langevin|nose-hoover, got '" + value + "'");
     return ThermostatKind::None;
+}
+
+moldyn::Truncation parseTruncation(const std::string& value) {
+    if (value == "truncated") return moldyn::Truncation::Truncated;
+    if (value == "linear-force-shift") return moldyn::Truncation::LinearForceShift;
+    printUsageAndExit("--truncation must be one of truncated|linear-force-shift, got '" + value +
+                       "'");
+    return moldyn::Truncation::Truncated;
 }
 
 // ---------------------------------------------------------------------
@@ -327,6 +343,7 @@ struct SimArgs {
     long productionSteps = 0;
     ThermostatKind thermostat = ThermostatKind::None;
     uint64_t seed = 0;
+    moldyn::Truncation truncation = moldyn::Truncation::Truncated;
     std::optional<std::string> rdfOut;
     std::optional<std::string> msdOut;
     std::optional<std::string> thermoOut;
@@ -370,6 +387,9 @@ SimArgs parseSimArgs(const std::map<std::string, std::string>& args) {
 
     s.thermostat = parseThermostat(requireFlag(args, "--thermostat"));
     s.seed = parseSeedArg(requireFlag(args, "--seed"));
+
+    const std::optional<std::string> truncationArg = optionalFlag(args, "--truncation");
+    if (truncationArg) s.truncation = parseTruncation(*truncationArg);
 
     s.rdfOut = optionalFlag(args, "--rdf-out");
     s.msdOut = optionalFlag(args, "--msd-out");
@@ -464,7 +484,7 @@ int runSimulation(const SimArgs& args, const std::string& commandLine) {
     moldyn::System sys = moldyn::fccLattice(args.cells, args.density, args.temperature, args.seed);
     const std::size_t dof = 3 * sys.size() - 3;
 
-    moldyn::LennardJones lj(1.0, 1.0, args.cutoff, moldyn::Truncation::Truncated);
+    moldyn::LennardJones lj(1.0, 1.0, args.cutoff, args.truncation);
     moldyn::VerletList verlet(sys.box(), args.cutoff, args.skin);
     verlet.build(sys);
 
@@ -484,10 +504,18 @@ int runSimulation(const SimArgs& args, const std::string& commandLine) {
         thermoFile = openCsvOrExit(*args.thermoOut, commandLine);
         // Both potential_energy and pressure include the analytic LJ
         // long-range (tail) correction beyond the cutoff -- see
-        // LennardJones::longRangeCorrection[Pressure]. This line is the
-        // provenance record of that fact for anyone reading this CSV later.
-        (*thermoFile) << "# pressure_includes_tail_correction: yes\n";
-        (*thermoFile) << "# potential_energy_includes_tail_correction: yes\n";
+        // LennardJones::longRangeCorrection[Pressure]. That term is
+        // identically zero under linear-force-shift truncation (the
+        // potential is defined to vanish at rc), so the flag below is
+        // accurate either way: this line is the provenance record of the
+        // fact for anyone reading this CSV later.
+        const bool tailCorrected = (args.truncation == moldyn::Truncation::Truncated);
+        (*thermoFile) << "# truncation: "
+                       << (tailCorrected ? "truncated" : "linear-force-shift") << "\n";
+        (*thermoFile) << "# pressure_includes_tail_correction: " << (tailCorrected ? "yes" : "no")
+                       << "\n";
+        (*thermoFile) << "# potential_energy_includes_tail_correction: "
+                       << (tailCorrected ? "yes" : "no") << "\n";
         (*thermoFile) << "step,time,phase,potential_energy,kinetic_energy,total_energy,"
                          "temperature,pressure\n";
     }
