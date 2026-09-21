@@ -22,3 +22,9 @@ if(MOLDYN_BUILD_TESTS)
   enable_testing()
   add_subdirectory(tests)
 endif()
+
+# Guarded so the library and tests still build if the apps directory is
+# ever removed.
+if(EXISTS ${CMAKE_SOURCE_DIR}/apps)
+  add_subdirectory(apps)
+endif()
