@@ -1,6 +1,7 @@
 # Source files are appended here as each task lands.
 set(MOLDYN_SOURCES
   core/box.cpp
+  core/system.cpp
 )
 
 add_library(moldyn STATIC ${MOLDYN_SOURCES})
