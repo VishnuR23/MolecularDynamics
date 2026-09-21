@@ -2,6 +2,7 @@
 set(MOLDYN_SOURCES
   core/box.cpp
   core/system.cpp
+  io/nist_config.cpp
 )
 
 add_library(moldyn STATIC ${MOLDYN_SOURCES})

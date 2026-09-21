@@ -4,6 +4,7 @@ set(MOLDYN_TEST_SOURCES
   test_vec3.cpp
   test_box.cpp
   test_system.cpp
+  test_nist_config.cpp
 )
 
 add_executable(moldyn_tests ${MOLDYN_TEST_SOURCES})
