@@ -54,10 +54,13 @@ public:
     // uncounted tail to correct.
     //
     // Intensive (depends only on density, not on N or V separately),
-    // unlike longRangeCorrection() which is extensive -- this is not on
-    // ForceField because a tail correction is specific to a truncated
-    // dispersion potential, not a property every force field has.
-    double longRangeCorrectionPressure(const System& sys) const;
+    // unlike longRangeCorrection() which is extensive. Like the energy
+    // correction, this assumes the radial distribution function is
+    // uniform (g(r) = 1) beyond rc -- accurate for a dense, homogeneous
+    // fluid far from a phase boundary, which is the regime Phase 1
+    // targets; it is not a substitute for a real g(r) tail near a
+    // critical point or an interface.
+    double longRangeCorrectionPressure(const System& sys) const override;
 
     double sigma() const;
     double epsilon() const;

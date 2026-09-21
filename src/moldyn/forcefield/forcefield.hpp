@@ -19,7 +19,19 @@ public:
     virtual ~ForceField() = default;
 
     virtual EnergyVirial computeEnergyVirial(const System& sys) const = 0;
+
+    // Analytic long-range (tail) correction to the energy, beyond whatever
+    // cutoff the implementation uses. Zero for a force field with no
+    // truncated dispersion term, or for a scheme (e.g. LennardJones's
+    // LinearForceShift) that shifts the force to zero at the cutoff --
+    // stated explicitly as 0.0 rather than left for the caller to assume.
     virtual double longRangeCorrection(const System& sys) const = 0;
+
+    // Analytic long-range (tail) correction to the pressure -- already
+    // folded into a pressure (i.e. already divided by volume): add it
+    // directly to a pressure computed as rho*T + virial/(3*V), do not
+    // divide by volume again. Same zero cases as longRangeCorrection().
+    virtual double longRangeCorrectionPressure(const System& sys) const = 0;
 };
 
 }  // namespace moldyn
