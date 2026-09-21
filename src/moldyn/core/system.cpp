@@ -1,5 +1,7 @@
 #include "moldyn/core/system.hpp"
 
+#include <cstddef>
+
 namespace moldyn {
 
 System::System(Box box) : box_(box) {}

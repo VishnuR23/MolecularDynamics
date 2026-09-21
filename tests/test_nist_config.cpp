@@ -1,5 +1,6 @@
 #include "doctest/doctest.h"
 #include "moldyn/io/nist_config.hpp"
+#include <stdexcept>
 #include <string>
 
 static std::string dataPath(const std::string& rel) {
