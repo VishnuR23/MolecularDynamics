@@ -2,6 +2,7 @@
 set(MOLDYN_TEST_SOURCES
   test_main.cpp
   test_vec3.cpp
+  test_box.cpp
 )
 
 add_executable(moldyn_tests ${MOLDYN_TEST_SOURCES})
