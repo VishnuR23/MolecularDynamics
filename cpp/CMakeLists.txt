@@ -1,6 +1,0 @@
-cmake_minimum_required(VERSION 3.12)
-project(moldyn_core CXX)
-set(CMAKE_CXX_STANDARD 17)
-find_package(pybind11 REQUIRED)
-pybind11_add_module(moldyn_core bindings.cpp backend.cpp)
-target_include_directories(moldyn_core PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
