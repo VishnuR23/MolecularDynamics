@@ -1,0 +1,6 @@
+build/
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+compile_commands.json
