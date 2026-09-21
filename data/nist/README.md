@@ -105,17 +105,50 @@ unexamined one. NIST's own equilibration method is unspecified beyond
 `results/exp05_lj_eos.csv` for our measured values (U*, p*, and T*) and
 their deviation from this table.
 
-The D* column above is NIST's tabulated self-diffusion coefficient at each
-state point -- not used by experiment 05's own U*/p* comparison, but used
-by `experiments/exp05b_rho090_diagnostic.sh`, which investigates
-experiment 05's rho*=0.900 outlier: our diagnostic run measures
-D_msd≈0.020 there against NIST's tabulated **D*=0.027** at the same
-(rho*, T*) -- a real, meaningful mobility deficit (about 26% low) relative
-to NIST's fully-equilibrated liquid, but clearly nonzero. That is
-corroborating evidence for a state that is suppressed and partially
-ordered rather than either a normal liquid or a rigid, non-diffusing
-crystal. See `results/exp05b_rho090_diagnostic.csv`/`.png` and the task-15
-report for the full discussion.
+`experiments/exp05b_rho090_diagnostic.sh` investigates experiment 05's
+rho*=0.900 outlier directly from the committed trajectory data. The
+strongest evidence is structural/dynamical, not a single number: the VACF
+shows a genuine backscattering minimum (-0.30 at t*≈0.20, the signature of
+a real, moving particle colliding with neighbours, not a rigid lattice
+site), the MSD shows a clear ballistic -> caging-plateau -> escape shape
+(0.086 at t*=0.5, only rising to 0.156 by t*=2.5) rather than a straight
+diffusive line, and g(r) does **not** decay cleanly to 1 within the
+accessible range -- after nearly reaching baseline near r*≈2.4-2.8 (g as
+low as 0.81) it re-strengthens to g≈1.32 near r*≈3.05, an oscillation
+regrowing rather than damping out. Contrasted directly against experiment
+03's Rahman g(r) (identical code, lower density: rho*=0.8177), which
+decays cleanly to 0.98-1.02 by r*≈4.5-5 -- so this is a real density
+effect, not a code or normalisation artifact. Together: genuinely mobile
+(not a rigid, zero-diffusion crystal), but retaining real structural order
+(not a normal liquid either) -- a partially-ordered, still-diffusing state
+near the freezing line.
+
+The D* column above (NIST's tabulated self-diffusion coefficient) is kept
+as **supporting**, not headline, evidence: our diagnostic's D_msd≈0.0203
+(n=1 trajectory, not error-barred like experiment 04's replica-averaged D)
+sits about 25% below NIST's tabulated **D*=0.027** at the identical
+(rho*, T*) -- consistent with, but weaker evidence than, the structural
+signatures above.
+
+**Neither diffusion estimate is converged at this density -- stated
+explicitly, not glossed over.** The Green-Kubo running integral is still
+rising at the edge of the accessible window: 0.0199 at t*=5 to 0.0406 at
+t*=10, more than doubling across the second half with no sign of
+levelling off. That window is capped at t*=10 by `moldyn_run`'s
+`kMaxLagCap=2000` (`apps/moldyn_run.cpp`) against a 100 t* trajectory --
+only 10% of it. The Einstein fit window (t*∈[2.5,7.5)) straddles the
+plateau-to-escape crossover, so its local slope is not linear within the
+window (D≈0.0153 on [2.5,5) vs. D≈0.0254 on [5,7.5)), meaning the reported
+D_msd likely *underestimates* the true long-time value. This is not fixed
+by raising `maxLag`: `Msd`/`Vacf` accumulation is O(frames x maxLag x
+natoms) per trajectory, and a t*=50 window at the current sampling rate is
+roughly 1e11 operations -- getting there properly needs a frame-sampling
+stride, which is new driver scope, not a config change, and is recorded as
+future work for Phase 3's performance pass rather than attempted here.
+
+See `results/exp05b_rho090_diagnostic.csv`/`.png` and the task-15 report's
+"Fix report" sections for the full discussion and the reproduction of
+these numbers from the committed CSVs.
 
 ## SPC/E water (`spce/`)
 
