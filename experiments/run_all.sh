@@ -27,7 +27,7 @@ if [ ! -x "$PYTHON" ]; then
 fi
 
 ENGINE_EXPERIMENTS="exp01_nist_table exp02_energy_conservation"
-PHYSICS_EXPERIMENTS="exp03_argon_rdf exp04_argon_diffusion exp05_lj_eos"
+PHYSICS_EXPERIMENTS="exp03_argon_rdf exp04_argon_diffusion exp05_lj_eos exp05b_rho090_diagnostic"
 
 START=$(date +%s)
 

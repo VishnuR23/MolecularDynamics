@@ -48,7 +48,9 @@ quoted table below is copied here verbatim as the provenance record.
 
 Used by experiment 05 (`experiments/exp05_lj_eos.sh`) to compare our
 simulated pressure and potential energy against NIST's own published values,
-rather than a digitised plot from a paper.
+rather than a digitised plot from a paper, and by experiment 05b
+(`experiments/exp05b_rho090_diagnostic.sh`) for the D* comparison described
+below.
 
 - Source: https://www.nist.gov/mml/csd/chemical-informatics-group/lennard-jones-fluid-properties,
   MD results table at https://mmlapps.nist.gov/srs/LJ_PURE/md.htm
@@ -86,11 +88,34 @@ obtained from block averages of length 2-4 time units (67% confidence).
 
 We run our own simulation at each of these six (T*, rho*) pairs with
 N = 500 (fcc, 5 cells/side), rc* = 3.0, dt = 0.005, matching NIST's own
-protocol as closely as our CLI allows (Langevin equilibration to target T*,
-then NVE production; NIST's equilibration method is unspecified beyond
-">50 t*"). See `experiments/exp05_lj_eos.sh` for the exact commands and
-`results/exp05_lj_eos.csv` for our measured values and their deviation from
-this table.
+protocol as closely as our CLI allows: Langevin equilibration to each row's
+own target T* (not a single nominal 0.85 for all six -- NIST's tabulated
+T* values are themselves each a distinct row, 0.849-0.853), then **NVT**
+production (Nose-Hoover chain, pinned at that same target T*). Production
+was originally NVE, matching NIST's stated method; a review found NVE let
+our achieved T* drift per-density (0.8256-0.8713) against NIST's tight
+0.849-0.853 band, confounding part of the U*/p* comparison with a
+different-state-point effect rather than engine error. NVT removes that
+confound at the cost of no longer matching NIST's own ensemble exactly;
+at N=500 that ensemble difference is far smaller than the temperature
+offset it replaces. `our_T_star` in the results CSV is the achieved mean
+production temperature, so this is a checked, reported quantity, not an
+unexamined one. NIST's own equilibration method is unspecified beyond
+">50 t*". See `experiments/exp05_lj_eos.sh` for the exact commands and
+`results/exp05_lj_eos.csv` for our measured values (U*, p*, and T*) and
+their deviation from this table.
+
+The D* column above is NIST's tabulated self-diffusion coefficient at each
+state point -- not used by experiment 05's own U*/p* comparison, but used
+by `experiments/exp05b_rho090_diagnostic.sh`, which investigates
+experiment 05's rho*=0.900 outlier: our diagnostic run measures
+D_msd≈0.020 there against NIST's tabulated **D*=0.027** at the same
+(rho*, T*) -- a real, meaningful mobility deficit (about 26% low) relative
+to NIST's fully-equilibrated liquid, but clearly nonzero. That is
+corroborating evidence for a state that is suppressed and partially
+ordered rather than either a normal liquid or a rigid, non-diffusing
+crystal. See `results/exp05b_rho090_diagnostic.csv`/`.png` and the task-15
+report for the full discussion.
 
 ## SPC/E water (`spce/`)
 

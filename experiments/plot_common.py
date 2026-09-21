@@ -108,6 +108,11 @@ def load_csv(path):
     # genfromtxt's column-count auto-detection pre-pass.
     data = np.genfromtxt(io.StringIO("".join(body_lines)), delimiter=",", names=True, dtype=None,
                           encoding="utf-8")
+    # A single-data-row CSV genfromtxt's to a 0-d structured array (a bare
+    # record, not a length-1 array), which breaks any caller that does
+    # data[0] or data['col'][i]. Always return a 1-d array so every caller
+    # can index it uniformly regardless of row count.
+    data = np.atleast_1d(data)
     return header, data
 
 
