@@ -10,6 +10,7 @@ set(MOLDYN_TEST_SOURCES
   test_neighbor.cpp
   test_integrator.cpp
   test_thermostat.cpp
+  test_analysis.cpp
 )
 
 add_executable(moldyn_tests ${MOLDYN_TEST_SOURCES})

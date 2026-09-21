@@ -10,6 +10,7 @@ set(MOLDYN_SOURCES
   integrate/langevin.cpp
   integrate/nose_hoover.cpp
   util/lattice.cpp
+  analyze/rdf.cpp
 )
 
 add_library(moldyn STATIC ${MOLDYN_SOURCES})
