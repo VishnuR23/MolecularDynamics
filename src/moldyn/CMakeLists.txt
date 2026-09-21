@@ -6,6 +6,8 @@ set(MOLDYN_SOURCES
   forcefield/lennard_jones.cpp
   neighbor/cell_list.cpp
   neighbor/verlet_list.cpp
+  integrate/velocity_verlet.cpp
+  util/lattice.cpp
 )
 
 add_library(moldyn STATIC ${MOLDYN_SOURCES})
