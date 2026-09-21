@@ -11,6 +11,9 @@ set(MOLDYN_SOURCES
   integrate/nose_hoover.cpp
   util/lattice.cpp
   analyze/rdf.cpp
+  analyze/msd.cpp
+  analyze/vacf.cpp
+  analyze/block_average.cpp
 )
 
 add_library(moldyn STATIC ${MOLDYN_SOURCES})
