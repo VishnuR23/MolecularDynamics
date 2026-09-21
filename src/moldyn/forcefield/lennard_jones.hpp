@@ -5,6 +5,8 @@
 
 namespace moldyn {
 
+class CellList;
+
 enum class Truncation { Truncated, LinearForceShift };
 
 // Lennard-Jones pair potential, evaluated by brute-force summation over all
@@ -32,6 +34,12 @@ public:
     //   atom i gains +f_vec_ij, atom j gains -f_vec_ij
     EnergyVirial computeForces(System& sys) const;
 
+    // Same computation as computeForces(sys), but only visiting the pairs the
+    // neighbour list offers instead of every i<j pair. Results are identical
+    // to the brute-force path to machine precision -- these are a pure
+    // optimisation of how pairs are found, not a different calculation.
+    EnergyVirial computeForces(System& sys, const CellList& cells) const;
+
     // Analytic long-range correction to the energy. Zero for LinearForceShift.
     double longRangeCorrection(const System& sys) const override;
 
@@ -41,14 +49,20 @@ public:
     Truncation truncation() const;
 
 private:
-    // Shared pair kernel for both computeEnergyVirial and computeForces:
-    // the i<j iteration, minimum image, cutoff test, and uLJ/wLJ arithmetic
-    // live here exactly once. AccumulateForces is a compile-time switch so
-    // the force-accumulation branch compiles away entirely for the
-    // energy-only path. forceSink is written to iff AccumulateForces is
-    // true, and must be non-null in that case (it aliases sys).
-    template <bool AccumulateForces>
-    EnergyVirial computePairSum(const System& sys, System* forceSink) const;
+    // Shared pair kernel for computeEnergyVirial and every computeForces
+    // overload: the minimum image, cutoff test, and uLJ/wLJ arithmetic live
+    // here exactly once. AccumulateForces is a compile-time switch so the
+    // force-accumulation branch compiles away entirely for the energy-only
+    // path. forceSink is written to iff AccumulateForces is true, and must
+    // be non-null in that case (it aliases sys).
+    //
+    // PairSource supplies the candidate (i, j) pairs via a
+    // `forEachPair(fn)` template method with i < j -- the brute-force i<j
+    // double loop, CellList, and VerletList all satisfy this, so this is
+    // the only place that ever computes uLJ/wLJ from r2.
+    template <bool AccumulateForces, class PairSource>
+    EnergyVirial computePairSum(const System& sys, System* forceSink,
+                                 const PairSource& pairs) const;
 
     double sigma_;
     double epsilon_;

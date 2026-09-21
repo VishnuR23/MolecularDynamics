@@ -4,6 +4,7 @@ set(MOLDYN_SOURCES
   core/system.cpp
   io/nist_config.cpp
   forcefield/lennard_jones.cpp
+  neighbor/cell_list.cpp
 )
 
 add_library(moldyn STATIC ${MOLDYN_SOURCES})
