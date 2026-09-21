@@ -29,7 +29,8 @@ LennardJones::LennardJones(double sigma, double epsilon, double cutoff, Truncati
     dudrAtCutoff_ = -wAtCutoff / cutoff_;
 }
 
-EnergyVirial LennardJones::computeEnergyVirial(const System& sys) const {
+template <bool AccumulateForces>
+EnergyVirial LennardJones::computePairSum(const System& sys, System* forceSink) const {
     EnergyVirial result;
 
     const double sig2 = sigma_ * sigma_;
@@ -49,18 +50,34 @@ EnergyVirial LennardJones::computeEnergyVirial(const System& sys) const {
             const double uLJ = 4.0 * epsilon_ * (s6 * s6 - s6);
             const double wLJ = 24.0 * epsilon_ * (2.0 * s6 * s6 - s6);
 
-            if (truncation_ == Truncation::Truncated) {
-                result.energy += uLJ;
-                result.virial += wLJ;
-            } else {
+            double u = uLJ;
+            double w = wLJ;
+            if (truncation_ == Truncation::LinearForceShift) {
                 const double r = std::sqrt(r2);
-                result.energy += uLJ - uAtCutoff_ - (r - cutoff_) * dudrAtCutoff_;
-                result.virial += wLJ + r * dudrAtCutoff_;
+                u = uLJ - uAtCutoff_ - (r - cutoff_) * dudrAtCutoff_;
+                w = wLJ + r * dudrAtCutoff_;
+            }
+            result.energy += u;
+            result.virial += w;
+
+            if constexpr (AccumulateForces) {
+                const Vec3 f = (w / r2) * d;
+                forceSink->addForce(i, f);
+                forceSink->addForce(j, -1.0 * f);
             }
         }
     }
 
     return result;
+}
+
+EnergyVirial LennardJones::computeEnergyVirial(const System& sys) const {
+    return computePairSum<false>(sys, nullptr);
+}
+
+EnergyVirial LennardJones::computeForces(System& sys) const {
+    sys.zeroForces();
+    return computePairSum<true>(sys, &sys);
 }
 
 double LennardJones::longRangeCorrection(const System& sys) const {

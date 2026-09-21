@@ -6,6 +6,7 @@ set(MOLDYN_TEST_SOURCES
   test_system.cpp
   test_nist_config.cpp
   test_nist_lj.cpp
+  test_forces.cpp
 )
 
 add_executable(moldyn_tests ${MOLDYN_TEST_SOURCES})
