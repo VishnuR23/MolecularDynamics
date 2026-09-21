@@ -419,7 +419,8 @@ public:
             const double temperature = sys_.temperature(dof_);
             const double volume = sys_.box().volume();
             const double numberDensity = static_cast<double>(sys_.size()) / volume;
-            const double pressure = numberDensity * temperature + lastVirial_ / (3.0 * volume);
+            const double pressure = numberDensity * temperature + lastVirial_ / (3.0 * volume) +
+                                     lj_.longRangeCorrectionPressure(sys_);
             const double potentialEnergy = lastEnergy_ + lj_.longRangeCorrection(sys_);
             const double totalEnergy = potentialEnergy + ke;
 
@@ -481,6 +482,12 @@ int runSimulation(const SimArgs& args, const std::string& commandLine) {
     std::optional<std::ofstream> thermoFile;
     if (args.thermoOut) {
         thermoFile = openCsvOrExit(*args.thermoOut, commandLine);
+        // Both potential_energy and pressure include the analytic LJ
+        // long-range (tail) correction beyond the cutoff -- see
+        // LennardJones::longRangeCorrection[Pressure]. This line is the
+        // provenance record of that fact for anyone reading this CSV later.
+        (*thermoFile) << "# pressure_includes_tail_correction: yes\n";
+        (*thermoFile) << "# potential_energy_includes_tail_correction: yes\n";
         (*thermoFile) << "step,time,phase,potential_energy,kinetic_energy,total_energy,"
                          "temperature,pressure\n";
     }

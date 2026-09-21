@@ -121,6 +121,22 @@ double LennardJones::longRangeCorrection(const System& sys) const {
            ((1.0 / 3.0) * sigOverRc9 - sigOverRc3);
 }
 
+double LennardJones::longRangeCorrectionPressure(const System& sys) const {
+    if (truncation_ == Truncation::LinearForceShift) {
+        return 0.0;
+    }
+
+    const double n = static_cast<double>(sys.size());
+    const double rho = n / sys.box().volume();
+    const double sigOverRc = sigma_ / cutoff_;
+    const double sigOverRc3 = sigOverRc * sigOverRc * sigOverRc;
+    const double sigOverRc9 = sigOverRc3 * sigOverRc3 * sigOverRc3;
+    const double sig3 = sigma_ * sigma_ * sigma_;
+
+    return (16.0 / 3.0) * kPi * rho * rho * epsilon_ * sig3 *
+           ((2.0 / 3.0) * sigOverRc9 - sigOverRc3);
+}
+
 double LennardJones::sigma() const {
     return sigma_;
 }

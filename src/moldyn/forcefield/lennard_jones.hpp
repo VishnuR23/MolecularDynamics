@@ -45,6 +45,20 @@ public:
     // Analytic long-range correction to the energy. Zero for LinearForceShift.
     double longRangeCorrection(const System& sys) const override;
 
+    // Analytic long-range correction to the pressure -- the virial tail
+    // beyond the cutoff, already folded into a pressure (i.e. already
+    // divided by volume): add it directly to a pressure computed as
+    // rho*T + virial/(3*V), do not divide by volume again. Zero for
+    // LinearForceShift, for the same reason longRangeCorrection() is:
+    // that scheme shifts the force to zero at rc, so there is no
+    // uncounted tail to correct.
+    //
+    // Intensive (depends only on density, not on N or V separately),
+    // unlike longRangeCorrection() which is extensive -- this is not on
+    // ForceField because a tail correction is specific to a truncated
+    // dispersion potential, not a property every force field has.
+    double longRangeCorrectionPressure(const System& sys) const;
+
     double sigma() const;
     double epsilon() const;
     double cutoff() const;
