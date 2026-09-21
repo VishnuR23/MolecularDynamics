@@ -1,23 +1,28 @@
 # source: https://mmlapps.nist.gov/srs/LJ_PURE/md.htm (NIST SRSW LJ fluid MD results)
 # retrieved: 2026-09-21
 # reference_convention: 3 sigma cutoff + standard long range corrections (matches our --truncation truncated)
-# git_sha: f5f126c
+# git_sha: 97661a0
 # host: Darwin arm64
 # units: reduced Lennard-Jones units (sigma = epsilon = m = 1)
 # cells: 5 (N=500, matching NIST's N exactly)
 # cutoff: 3.0
 # skin: 0.3
 # dt: 0.005
-# equilibrate_steps: 10000 (Langevin, target T*=0.85)
-# production_steps: 20000 (NVE)
-# tolerance: |delta U*| <= 0.1, |delta p*| <= 0.3 (absolute, picked a priori)
+# equilibrate_steps: 10000 (Langevin, target = this row's nist_T_star)
+# production_steps: 20000 (NVT, Nose-Hoover chain, pinned at this row's nist_T_star)
+# protocol_correction: production changed from NVE at a shared T*=0.85 to NVT (Nose-Hoover)
+#       pinned at each row's own NIST-quoted T*, after a review found the old NVE T* drift
+#       (0.8256-0.8713) confounded the U*/p* comparison -- see task-15 report
+# tolerance: |delta U*| <= 0.1, |delta p*| <= 0.3, |delta T*| <= 0.02 (all absolute, picked a priori)
 # note: raw per-step thermo-out (30000 rows/density) is not committed -- every flag above
-#       is fixed except --density and --seed (this row's rho_star and seed columns), so
-#       'moldyn_run --cells 5 --density RHO --temperature 0.85 --cutoff 3.0 --skin 0.3 --dt 0.005 --equilibrate 10000 --production 20000 --thermostat none --seed SEED --thermo-out FILE' reproduces it exactly
+#       is fixed except --density, --temperature and --seed (this row's rho_star, nist_T_star
+#       and seed columns), so 'moldyn_run --cells 5 --density RHO --temperature NIST_T
+#       --cutoff 3.0 --skin 0.3 --dt 0.005 --equilibrate 10000 --production 20000
+#       --thermostat nose-hoover --seed SEED --thermo-out FILE' reproduces it exactly
 rho_star,seed,our_T_star,our_U_star,our_p_star,nist_T_star,nist_U_star,nist_p_star
-0.776,5001,0.838364,-5.523463,-0.057402,0.851,-5.517,0.030
-0.780,5002,0.836877,-5.556565,-0.056865,0.853,-5.533,0.072
-0.820,5003,0.871319,-5.772427,0.663250,0.852,-5.803,0.573
-0.840,5004,0.825569,-5.945339,0.708242,0.851,-5.909,0.910
-0.860,5005,0.838412,-6.042895,1.188006,0.849,-6.027,1.282
-0.900,5006,0.843936,-6.645812,-0.033134,0.851,-6.234,2.544
+0.776,5001,0.851672,-5.510863,0.008240,0.851,-5.517,0.030
+0.780,5002,0.851215,-5.540721,0.030960,0.853,-5.533,0.072
+0.820,5003,0.851894,-5.793228,0.561636,0.852,-5.803,0.573
+0.840,5004,0.852558,-5.917598,0.866750,0.851,-5.909,0.910
+0.860,5005,0.846517,-6.034359,1.236403,0.849,-6.027,1.282
+0.900,5006,0.848308,-6.637300,0.015356,0.851,-6.234,2.544

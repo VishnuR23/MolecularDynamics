@@ -1,6 +1,6 @@
 # state_point_rahman: rho*=0.8177 T*=0.7880 (Rahman 1964, Phys. Rev. 136, A405)
 # state_point_verlet: rho*=0.8442 T*=0.7280 (Verlet 1967, Phys. Rev. 159, 98)
-# git_sha: f5f126c
+# git_sha: 97661a0
 # host: Darwin arm64
 # units: reduced Lennard-Jones units (sigma = epsilon = m = 1)
 # cells: 6 (N=864)

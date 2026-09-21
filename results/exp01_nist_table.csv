@@ -1,5 +1,5 @@
 # command: /Users/vishnu/molecular/build/apps/moldyn_run --nist-config /Users/vishnu/molecular/data/nist/lj
-# git_sha: f5f126c
+# git_sha: 97661a0
 # host: Darwin arm64
 # units: reduced Lennard-Jones units (sigma = epsilon = m = 1)
 # tolerance: 5e-5 relative deviation (moldyn_run's own pass/fail threshold)

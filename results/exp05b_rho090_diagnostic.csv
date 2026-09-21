@@ -1,0 +1,11 @@
+# purpose: evidence for experiment 05's rho*=0.9 outlier investigation -- see task-15 report
+# command: /Users/vishnu/molecular/build/apps/moldyn_run --cells 5 --density 0.900 --temperature 0.851 --cutoff 3.0 --skin 0.3 --dt 0.005 --equilibrate 10000 --production 20000 --thermostat none --seed 5006 --rdf-out /Users/vishnu/molecular/results/exp05b_rdf_rho0.900.csv --msd-out /Users/vishnu/molecular/results/exp05b_msd_rho0.900.csv
+# git_sha: 97661a0
+# host: Darwin arm64
+# units: reduced Lennard-Jones units (sigma = epsilon = m = 1)
+# state_point: rho*=0.900, T*=0.851 (NIST's own quoted T* for this row)
+# nist_D_star: 0.027 (data/nist/README.md, same rho*/T*, fully-equilibrated liquid)
+# d_floor: 0.005 (a priori 'not frozen' threshold, see script header)
+# tolerance: D_msd > 0.005
+rho_star,T_star,seed,D_msd,D_vacf,nist_D_star,delta_D_msd,rdf_first_peak_r,rdf_first_peak_g,rdf_tail_g
+0.900,0.851,5006,0.02034092596,0.04063175554,0.027,-0.006659,1.097670,3.114270,1.1039
