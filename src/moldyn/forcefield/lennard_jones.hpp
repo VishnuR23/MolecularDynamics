@@ -6,6 +6,7 @@
 namespace moldyn {
 
 class CellList;
+class VerletList;
 
 enum class Truncation { Truncated, LinearForceShift };
 
@@ -39,6 +40,7 @@ public:
     // to the brute-force path to machine precision -- these are a pure
     // optimisation of how pairs are found, not a different calculation.
     EnergyVirial computeForces(System& sys, const CellList& cells) const;
+    EnergyVirial computeForces(System& sys, const VerletList& verletList) const;
 
     // Analytic long-range correction to the energy. Zero for LinearForceShift.
     double longRangeCorrection(const System& sys) const override;

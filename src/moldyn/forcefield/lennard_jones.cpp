@@ -5,6 +5,7 @@
 
 #include "moldyn/core/vec3.hpp"
 #include "moldyn/neighbor/cell_list.hpp"
+#include "moldyn/neighbor/verlet_list.hpp"
 
 namespace moldyn {
 
@@ -97,6 +98,11 @@ EnergyVirial LennardJones::computeForces(System& sys) const {
 EnergyVirial LennardJones::computeForces(System& sys, const CellList& cells) const {
     sys.zeroForces();
     return computePairSum<true>(sys, &sys, cells);
+}
+
+EnergyVirial LennardJones::computeForces(System& sys, const VerletList& verletList) const {
+    sys.zeroForces();
+    return computePairSum<true>(sys, &sys, verletList);
 }
 
 double LennardJones::longRangeCorrection(const System& sys) const {
