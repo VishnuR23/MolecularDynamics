@@ -1,6 +1,7 @@
 # Test files are appended here as each task lands.
 set(MOLDYN_TEST_SOURCES
   test_main.cpp
+  test_vec3.cpp
 )
 
 add_executable(moldyn_tests ${MOLDYN_TEST_SOURCES})
