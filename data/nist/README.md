@@ -102,53 +102,81 @@ offset it replaces. `our_T_star` in the results CSV is the achieved mean
 production temperature, so this is a checked, reported quantity, not an
 unexamined one. NIST's own equilibration method is unspecified beyond
 ">50 t*". See `experiments/exp05_lj_eos.sh` for the exact commands and
-`results/exp05_lj_eos.csv` for our measured values (U*, p*, and T*) and
-their deviation from this table.
+`results/exp05_lj_eos.csv` for our measured values and their deviation
+from this table: `our_T_star`, `our_U_star`, `our_p_star`, the matching
+`nist_*` columns copied from the rows above, the signed deviations
+`delta_T_star`, `delta_U_star`, `delta_p_star` (all `ours - NIST`), and a
+per-row `status`. Five rows pass; `rho*=0.900` does not, and the next
+section is why.
 
-`experiments/exp05b_rho090_diagnostic.sh` investigates experiment 05's
-rho*=0.900 outlier directly from the committed trajectory data. The
-strongest evidence is structural/dynamical, not a single number: the VACF
-shows a genuine backscattering minimum (-0.30 at t*≈0.20, the signature of
-a real, moving particle colliding with neighbours, not a rigid lattice
-site), the MSD shows a clear ballistic -> caging-plateau -> escape shape
-(0.086 at t*=0.5, only rising to 0.156 by t*=2.5) rather than a straight
-diffusive line, and g(r) does **not** decay cleanly to 1 within the
-accessible range -- after nearly reaching baseline near r*≈2.4-2.8 (g as
-low as 0.81) it re-strengthens to g≈1.32 near r*≈3.05, an oscillation
-regrowing rather than damping out. Contrasted directly against experiment
-03's Rahman g(r) (identical code, lower density: rho*=0.8177), which
-decays cleanly to 0.98-1.02 by r*≈4.5-5 -- so this is a real density
-effect, not a code or normalisation artifact. Together: genuinely mobile
-(not a rigid, zero-diffusion crystal), but retaining real structural order
-(not a normal liquid either) -- a partially-ordered, still-diffusing state
-near the freezing line.
+`experiments/exp05b_rho090_diagnostic.sh` characterises what the
+simulation actually reaches at rho*=0.900, across three independent
+seeds. The answer is that it never melts: it stays in the fcc lattice it
+was started from. All three seeds give D_msd between 1.5e-5 and 3.7e-5
+against NIST's tabulated **D*=0.027** for the same (rho*, T*) -- about
+1000x smaller, and indistinguishable from zero. All three fail the
+experiment's a-priori "not frozen" floor of D_msd > 0.005.
 
-The D* column above (NIST's tabulated self-diffusion coefficient) is kept
-as **supporting**, not headline, evidence: our diagnostic's D_msd≈0.0203
-(n=1 trajectory, not error-barred like experiment 04's replica-averaged D)
-sits about 25% below NIST's tabulated **D*=0.027** at the identical
-(rho*, T*) -- consistent with, but weaker evidence than, the structural
-signatures above.
+Four signatures, all read from the committed trajectories:
 
-**Neither diffusion estimate is converged at this density -- stated
-explicitly, not glossed over.** The Green-Kubo running integral is still
-rising at the edge of the accessible window: 0.0199 at t*=5 to 0.0406 at
-t*=10, more than doubling across the second half with no sign of
-levelling off. That window is capped at t*=10 by `moldyn_run`'s
-`kMaxLagCap=2000` (`apps/moldyn_run.cpp`) against a 100 t* trajectory --
-only 10% of it. The Einstein fit window (t*∈[2.5,7.5)) straddles the
-plateau-to-escape crossover, so its local slope is not linear within the
-window (D≈0.0153 on [2.5,5) vs. D≈0.0254 on [5,7.5)), meaning the reported
-D_msd likely *underestimates* the true long-time value. This is not fixed
-by raising `maxLag`: `Msd`/`Vacf` accumulation is O(frames x maxLag x
-natoms) per trajectory, and a t*=50 window at the current sampling rate is
-roughly 1e11 operations -- getting there properly needs a frame-sampling
-stride, which is new driver scope, not a config change, and is recorded as
-future work for Phase 3's performance pass rather than attempted here.
+- **The MSD is flat.** It rises ballistically to 0.085 by t*=1 and then
+  stays inside 0.0790-0.0853 all the way to t*=10. A liquid's MSD grows
+  linearly forever; a bounded one is atoms vibrating about fixed sites.
+- **The vibration amplitude is a melting solid's.** MSD = 0.0805 at
+  t*=10 is 0.164 sigma of rms displacement per axis against a
+  nearest-neighbour distance of 1.098 sigma: a Lindemann ratio of
+  **0.149**, where the textbook criterion for a crystal at its melting
+  point is about 0.15.
+- **The VACF backscatters and dies** (minimum -0.303 at t*=0.20, down to
+  0.0009 by t*=10). Backscattering alone does not separate a liquid from
+  a solid -- an atom in a cage and an atom on a lattice site both
+  reverse -- but with a flat MSD it means the reversals never add up to
+  transport.
+- **g(r) keeps order the reference liquid has lost.** The principal
+  peaks decay monotonically, 3.125 -> 1.531 -> 1.318; an earlier version
+  of this note called that "an oscillation regrowing rather than damping
+  out", which the committed data never supported. The accurate statement
+  is stronger. Against experiment 03's Rahman g(r) (identical code and
+  normalisation, lower density rho*=0.8177, a genuine liquid), |g-1| at
+  the third principal peak is **0.318 against 0.087 -- an envelope 3.7x
+  further from the bulk value**, and where the reference has settled to
+  0.98-1.02 by r*≈4.5-5, ours is still 1.102 at r*=4.02. There is also a
+  **split second-shell shoulder** our g(r) has and the reference does
+  not: two minima at r*=2.367 (g=0.846) and r*=2.789 (g=0.812) with a
+  sub-unity maximum at r*=2.588 (g=0.960) between them, where the
+  reference has one smooth trough at r*=2.533 (g=0.853). That splitting
+  is the fcc lattice's distinct neighbour distances resolving where a
+  liquid's would be smeared into one.
 
-See `results/exp05b_rho090_diagnostic.csv`/`.png` and the task-15 report's
-"Fix report" sections for the full discussion and the reproduction of
-these numbers from the committed CSVs.
+Both signs of the EOS disagreement follow: an ordered lattice sits deeper
+in the pair potential (U* too negative by 0.390) and relieves the
+short-range repulsion that dominates the virial at this density (p* too
+low by 2.452).
+
+This supersedes an earlier n=1 reading of the same state point, which
+measured D_msd=0.0203 and concluded "partially ordered but still mobile".
+About 0.0046 of that was not diffusion at all but uncorrected
+centre-of-mass drift, which adds `<v_com^2> * t_mid / 3` to any Einstein
+estimate; with the drift fixed the same seed gives 1.5e-5. The
+diagnostic now runs three seeds rather than one, and the threshold was
+left untouched.
+
+One limitation, stated rather than glossed: the Green-Kubo window is
+capped at t*=10 by `kMaxLagCap=2000` (`apps/moldyn_run.cpp`), 10% of the
+100 t* trajectory. It does not affect the conclusion here -- both
+estimators agree on "indistinguishable from zero" -- but measuring a real
+D at this density would need more. Raising `maxLag` is not a config
+change: `Msd`/`Vacf` accumulation is O(frames x maxLag x natoms), and a
+t*=50 window at the current sampling rate is roughly 1e11 operations.
+Extending the correlation window properly needs a frame-sampling stride,
+which is new driver scope, recorded as future work for Phase 3's
+performance pass.
+
+See `results/exp05b_rho090_diagnostic.csv`/`.png` and
+[`docs/findings/2026-09-21-rho090-outlier.md`](../../docs/findings/2026-09-21-rho090-outlier.md)
+for the full discussion, and
+[`docs/findings/2026-09-21-exp04-einstein-vs-green-kubo.md`](../../docs/findings/2026-09-21-exp04-einstein-vs-green-kubo.md)
+for the separate experiment 04 finding.
 
 ## SPC/E water (`spce/`)
 
