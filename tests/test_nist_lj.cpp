@@ -4,6 +4,7 @@
 #include "moldyn/core/vec3.hpp"
 #include "moldyn/forcefield/lennard_jones.hpp"
 #include "moldyn/io/nist_config.hpp"
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <string>
@@ -69,9 +70,49 @@ const PressureTailPoint kPressureTailPoints[] = {
     {0.7000, 2.5, -0.3748, -0.5240},
     {0.5000, 2.5, -0.2677, -0.2674},
 };
+// Half a unit in the last significant figure NIST printed.
+//
+// Every value in kRefs is published to exactly 5 significant figures, so
+// the true value lies within half a unit of the last printed digit --
+// e.g. -4.3515e3 stands for a true value in [-4351.55, -4351.45], a
+// half-width of 0.05. That per-value half-width is exactly how precisely
+// the reference is known, so it is both the tightest bound this
+// comparison can honestly assert and the loosest one worth asserting.
+//
+// This replaces a flat 5e-5 relative tolerance, which was up to 9.4x
+// looser than NIST's actual precision -- worst at W = -935.78, whose
+// relative half-width is 0.005/935.78 = 5.34e-6 -- so a regression that
+// broke the fifth published digit would have passed it. Do not loosen this back to a flat
+// number. Every value here agrees with NIST to every digit NIST prints,
+// and that is the claim under test.
+double roundingHalfWidth(double referenceValue) {
+    const double magnitude = std::abs(referenceValue);
+    if (magnitude == 0.0) {
+        return 0.0;
+    }
+    const double decadeExponent = std::floor(std::log10(magnitude));
+    return 0.5 * std::pow(10.0, decadeExponent - 4.0);
+}
+
+// The LinearForceShift rows' U_LRC is an exact structural zero (that
+// scheme shifts the potential to vanish at rc), not a rounded
+// measurement, so there is no last printed digit to halve.
+constexpr double kZeroLrcTolerance = 1e-12;
 }  // namespace
 
-TEST_CASE("Lennard-Jones energy and virial match the NIST reference values") {
+TEST_CASE("roundingHalfWidth is half a unit in NIST's fifth significant figure") {
+    // The helper the tolerance below rests on, checked against
+    // hand-computed values spanning the four decades kRefs covers.
+    CHECK(roundingHalfWidth(-4.3515e3) == doctest::Approx(0.05));
+    CHECK(roundingHalfWidth(-5.6867e2) == doctest::Approx(0.005));
+    CHECK(roundingHalfWidth(-1.6790e1) == doctest::Approx(0.0005));
+    CHECK(roundingHalfWidth(-5.4517e-1) == doctest::Approx(5e-6));
+    CHECK(roundingHalfWidth(0.0) == 0.0);
+}
+
+TEST_CASE("Lennard-Jones energy and virial match every digit NIST publishes") {
+    double worstRatio = 0.0;
+
     for (const Ref& r : kRefs) {
         CAPTURE(r.config);
         CAPTURE(r.rc);
@@ -82,17 +123,35 @@ TEST_CASE("Lennard-Jones energy and virial match the NIST reference values") {
         LennardJones lj(1.0, 1.0, r.rc, r.trunc);
         auto ev = lj.computeEnergyVirial(cfg.system);
 
-        // NIST publishes 5 significant figures; compare relatively.
-        CHECK(ev.energy == doctest::Approx(r.upair).epsilon(5e-5));
-        CHECK(ev.virial == doctest::Approx(r.wpair).epsilon(5e-5));
+        const double uTol = roundingHalfWidth(r.upair);
+        const double wTol = roundingHalfWidth(r.wpair);
+        const double uErr = std::abs(ev.energy - r.upair);
+        const double wErr = std::abs(ev.virial - r.wpair);
+        CAPTURE(uErr);
+        CAPTURE(uTol);
+        CAPTURE(wErr);
+        CAPTURE(wTol);
+        CHECK(uErr <= uTol);
+        CHECK(wErr <= wTol);
+        worstRatio = std::max({worstRatio, uErr / uTol, wErr / wTol});
 
         const double lrc = lj.longRangeCorrection(cfg.system);
         if (r.ulrc == 0.0) {
-            CHECK(lrc == doctest::Approx(0.0).epsilon(1e-12));
+            CHECK(std::abs(lrc) <= kZeroLrcTolerance);
         } else {
-            CHECK(lrc == doctest::Approx(r.ulrc).epsilon(5e-5));
+            const double lrcTol = roundingHalfWidth(r.ulrc);
+            const double lrcErr = std::abs(lrc - r.ulrc);
+            CAPTURE(lrcErr);
+            CAPTURE(lrcTol);
+            CHECK(lrcErr <= lrcTol);
+            worstRatio = std::max(worstRatio, lrcErr / lrcTol);
         }
     }
+
+    // Reported, not asserted at a threshold: this is the headline number
+    // ("our worst value uses this fraction of NIST's own precision"), and
+    // the per-value CHECKs above are what actually gates it.
+    MESSAGE("worst case: " << worstRatio << " of the per-value rounding half-width");
 }
 
 TEST_CASE("Lennard-Jones pressure long-range correction matches hand-computed values") {
