@@ -1,9 +1,10 @@
 """Shared plotting infrastructure for the moldyn reproduction experiments.
 
 Every plot_expNN.py script uses apply_style(), load_csv() and save() from
-here rather than styling itself, so the figures read as one system. See
-.superpowers/sdd/2026-09-20-phase1-lennard-jones/task-15-brief.md and the
-dataviz skill for the design rationale.
+here rather than styling itself, so the figures read as one system: one
+palette in which blue is always "ours" and orange always "the reference",
+one axis per panel (never a dual-y chart), a legend on every multi-series
+figure, and the git revision stamped into every footer.
 
 Only numpy and matplotlib are used anywhere in experiments/ (no seaborn, no
 pandas) -- see experiments/requirements.txt.
@@ -117,15 +118,23 @@ def load_csv(path):
 
 
 def _git_sha() -> str:
+    """The revision this figure was generated from.
+
+    `git describe --always --dirty`, not `rev-parse --short HEAD`: a figure
+    rendered from a modified working tree is stamped `<sha>-dirty`, so it
+    cannot masquerade as the clean commit it was derived from. The same
+    command stamps every CSV (experiments/*.sh) and the moldyn_run binary
+    itself (apps/GitSha.cmake), so all three agree.
+    """
     try:
         out = subprocess.run(
-            ["git", "rev-parse", "--short", "HEAD"],
+            ["git", "describe", "--always", "--dirty"],
             cwd=ROOT,
             capture_output=True,
             check=True,
             text=True,
         )
-        return out.stdout.strip()
+        return out.stdout.strip() or "unknown"
     except Exception:
         return "unknown"
 
