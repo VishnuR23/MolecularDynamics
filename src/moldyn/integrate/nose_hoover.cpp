@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cmath>
+#include <stdexcept>
 
 namespace moldyn {
 
@@ -29,6 +30,12 @@ NoseHooverChain::NoseHooverChain(double dt, double temperature, double tau, int 
       Q_(static_cast<std::size_t>(chainLength)),
       xi_(static_cast<std::size_t>(chainLength), 0.0),
       pxi_(static_cast<std::size_t>(chainLength), 0.0) {
+    // The header documents chainLength >= 1, but nothing enforced it, and
+    // the very next line writes Q_[0] -- undefined behaviour on the empty
+    // vector a zero or negative chainLength produces. Fail loudly instead.
+    if (chainLength < 1) {
+        throw std::invalid_argument("NoseHooverChain: chainLength must be >= 1");
+    }
     Q_[0] = static_cast<double>(dof_) * temperature_ * tau_ * tau_;
     for (std::size_t k = 1; k < Q_.size(); ++k) {
         Q_[k] = temperature_ * tau_ * tau_;

@@ -25,8 +25,9 @@ namespace moldyn {
 // follows.
 class NoseHooverChain {
 public:
-    // chainLength >= 1; 3 is the usual choice. tau is the thermostat
-    // period; Q_1 = degreesOfFreedom*kT*tau^2, Q_i = kT*tau^2 for i > 1.
+    // chainLength >= 1 (throws std::invalid_argument otherwise); 3 is
+    // the usual choice. tau is the thermostat period;
+    // Q_1 = degreesOfFreedom*kT*tau^2, Q_i = kT*tau^2 for i > 1.
     NoseHooverChain(double dt, double temperature, double tau, int chainLength,
                      std::size_t degreesOfFreedom);
 

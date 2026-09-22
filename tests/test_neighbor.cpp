@@ -1,13 +1,39 @@
 #include "doctest/doctest.h"
+#include "moldyn/core/box.hpp"
+#include "moldyn/core/system.hpp"
+#include "moldyn/core/vec3.hpp"
 #include "moldyn/neighbor/cell_list.hpp"
 #include "moldyn/neighbor/verlet_list.hpp"
 #include "moldyn/forcefield/lennard_jones.hpp"
 #include "moldyn/io/nist_config.hpp"
+#include <cmath>
 #include <cstddef>
+#include <stdexcept>
 #include <vector>
 
 using namespace moldyn;
 
+// Why 1e-12 and not 0, throughout this file.
+//
+// The neighbour lists are a pure optimisation of *how pairs are found*,
+// not a different calculation: every pair inside the cutoff is visited
+// exactly once by either path, and each pair's contribution is computed by
+// the one shared kernel (LennardJones::computePairSum). So the two paths
+// sum an identical multiset of identical doubles -- but in a different
+// order, because the cell/Verlet traversal visits pairs grouped by cell
+// rather than in i<j order. Floating-point addition is not associative, so
+// the sums can differ in the last bits, by roughly
+// sqrt(n_pairs) * eps_machine ~ sqrt(1e5) * 2e-16 ~ 1e-13 for the N=800
+// configuration used here. 1e-12 is that, with a decade of headroom; 0
+// would be asserting an associativity that IEEE-754 does not provide.
+//
+// Phase 3 (SIMD, threading) will stress this deliberately: vectorised
+// accumulation reorders and partially parallelises the same sum, and a
+// threaded reduction reorders it again and non-deterministically. Expect
+// this bound to need loosening then -- to something like 1e-10 -- and when
+// it does, loosen it *with* a recomputed error estimate, not to whatever
+// makes the run pass. Nothing about the physics changes; only the summation
+// order does, and the tolerance should always state which.
 TEST_CASE("cell list reproduces brute-force forces to machine precision") {
     // config 1 is N=800 in L=10 with rc=3 -> 3 cells per side, the tight case
     auto cfg = readNistConfig(std::string(MOLDYN_DATA_DIR) +
@@ -41,13 +67,34 @@ TEST_CASE("cell list still matches NIST after the optimisation") {
     CellList cells(cfg.system.box(), 3.0);
     cells.build(cfg.system);
     auto ev = lj.computeForces(cfg.system, cells);
-    CHECK(ev.energy == doctest::Approx(-4.3515e3).epsilon(5e-5));
-    CHECK(ev.virial == doctest::Approx(-5.6867e2).epsilon(5e-5));
+    // Same bound tests/test_nist_lj.cpp uses: half a unit in NIST's own
+    // fifth published significant figure, absolute. Going through the
+    // cell list must not cost a single published digit.
+    CHECK(std::abs(ev.energy - (-4.3515e3)) <= 0.05);
+    CHECK(std::abs(ev.virial - (-5.6867e2)) <= 0.005);
 }
 
 TEST_CASE("cell list reports itself unusable for a too-small box") {
     CellList cells(Box(Vec3{5.0, 5.0, 5.0}), 3.0);   // only 1 cell per side
     CHECK_FALSE(cells.usable());
+}
+
+TEST_CASE("computeForces refuses an unusable cell list instead of answering wrongly") {
+    // The dangerous case is not that this throws -- it is what would
+    // happen if it did not. An unusable cell list still enumerates pairs;
+    // they are just the wrong ones (a cell's neighbour set wraps onto
+    // itself), so the call would return a plausible energy and plausible
+    // forces that are silently wrong. Fail loudly instead.
+    System sys(Box(Vec3{5.0, 5.0, 5.0}));
+    sys.addAtom(Vec3{0.0, 0.0, 0.0}, Vec3{0.0, 0.0, 0.0}, 1.0);
+    sys.addAtom(Vec3{1.1, 0.0, 0.0}, Vec3{0.0, 0.0, 0.0}, 1.0);
+
+    CellList cells(sys.box(), 3.0);   // only 1 cell per side -> unusable
+    REQUIRE_FALSE(cells.usable());
+    cells.build(sys);
+
+    LennardJones lj(1.0, 1.0, 3.0, Truncation::Truncated);
+    CHECK_THROWS_AS(lj.computeForces(sys, cells), std::invalid_argument);
 }
 
 namespace {

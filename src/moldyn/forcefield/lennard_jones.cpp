@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <cstddef>
+#include <stdexcept>
 
 #include "moldyn/core/vec3.hpp"
 #include "moldyn/neighbor/cell_list.hpp"
@@ -96,6 +97,18 @@ EnergyVirial LennardJones::computeForces(System& sys) const {
 }
 
 EnergyVirial LennardJones::computeForces(System& sys, const CellList& cells) const {
+    // CellList documents (neighbor/cell_list.hpp) that forEachPair is only
+    // valid when usable() is true: with fewer than 3 cells per side a
+    // cell's neighbour set wraps onto itself under the minimum image
+    // convention and pairs are double-counted or missed. Nothing in the
+    // current pipeline constructs such a list, but an unchecked
+    // precondition on a public overload is a silent-wrong-answer API --
+    // it would return a plausible number, not an error. Check it.
+    if (!cells.usable()) {
+        throw std::invalid_argument(
+            "LennardJones::computeForces: CellList is not usable (fewer than 3 cells per side); "
+            "fall back to the brute-force overload");
+    }
     sys.zeroForces();
     return computePairSum<true>(sys, &sys, cells);
 }

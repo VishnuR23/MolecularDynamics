@@ -6,6 +6,7 @@
 
 #include "moldyn/core/system.hpp"
 #include "moldyn/core/vec3.hpp"
+#include "moldyn/integrate/velocity_verlet.hpp"  // detail::fmaVec3
 #include "moldyn/util/random.hpp"
 
 namespace moldyn {
@@ -39,15 +40,26 @@ public:
         const double c1 = std::exp(-friction_ * dt_);
         const double c2 = std::sqrt(1.0 - c1 * c1);
 
+        // The deterministic B and A updates use detail::fmaVec3, exactly
+        // as VelocityVerlet does and for the same reason: one rounding per
+        // component instead of two. The stochastic O update below cannot
+        // and does not need to -- it is a two-term combination whose error
+        // is dominated by the O(sqrt(dt)) noise it injects, not by
+        // rounding -- but that is no reason to leave the deterministic
+        // halves of the splitting less accurate than the integrator they
+        // share a core with.
+
         // B: half-kick using the forces already current in sys on entry.
         for (std::size_t i = 0; i < n; ++i) {
             const double invMass = 1.0 / sys.mass(i);
-            sys.setVelocity(i, sys.velocity(i) + (halfDt * invMass) * sys.force(i));
+            sys.setVelocity(i, detail::fmaVec3(halfDt * invMass, sys.force(i), sys.velocity(i)));
         }
 
         // A: half-drift, wrapped into the box.
         for (std::size_t i = 0; i < n; ++i) {
-            sys.setPosition(i, sys.box().wrap(sys.position(i) + halfDt * sys.velocity(i)));
+            sys.setPosition(i,
+                             sys.box().wrap(detail::fmaVec3(halfDt, sys.velocity(i),
+                                                             sys.position(i))));
         }
 
         // O: Ornstein-Uhlenbeck velocity randomization, per component.
@@ -60,7 +72,9 @@ public:
 
         // A: half-drift, wrapped into the box.
         for (std::size_t i = 0; i < n; ++i) {
-            sys.setPosition(i, sys.box().wrap(sys.position(i) + halfDt * sys.velocity(i)));
+            sys.setPosition(i,
+                             sys.box().wrap(detail::fmaVec3(halfDt, sys.velocity(i),
+                                                             sys.position(i))));
         }
 
         // Forces at the new positions.
@@ -69,7 +83,7 @@ public:
         // B: half-kick with the freshly recomputed forces.
         for (std::size_t i = 0; i < n; ++i) {
             const double invMass = 1.0 / sys.mass(i);
-            sys.setVelocity(i, sys.velocity(i) + (halfDt * invMass) * sys.force(i));
+            sys.setVelocity(i, detail::fmaVec3(halfDt * invMass, sys.force(i), sys.velocity(i)));
         }
     }
 

@@ -39,6 +39,11 @@ public:
     // neighbour list offers instead of every i<j pair. Results are identical
     // to the brute-force path to machine precision -- these are a pure
     // optimisation of how pairs are found, not a different calculation.
+    // The CellList overload throws std::invalid_argument when
+    // cells.usable() is false -- that list cannot enumerate pairs
+    // correctly, and returning a plausible-looking wrong number instead
+    // of failing would be worse than useless. Use the brute-force
+    // overload for boxes too small to divide.
     EnergyVirial computeForces(System& sys, const CellList& cells) const;
     EnergyVirial computeForces(System& sys, const VerletList& verletList) const;
 
