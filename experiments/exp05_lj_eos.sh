@@ -58,7 +58,10 @@ BIN="$ROOT/build/apps/moldyn_run"
 RESULTS="$ROOT/results"
 mkdir -p "$RESULTS"
 
-GIT_SHA="$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo unknown)"
+# `git describe --always --dirty`, not `rev-parse --short HEAD`: a run
+# from a modified working tree is stamped `<sha>-dirty`, so it cannot
+# masquerade as the clean commit it was derived from.
+GIT_SHA="$(git -C "$ROOT" describe --always --dirty 2>/dev/null || echo unknown)"
 HOST="$(uname -s) $(uname -m)"
 
 CELLS=5   # N = 4*5^3 = 500, matching NIST's N exactly
@@ -118,8 +121,24 @@ $(awk -F, '
   ' N="$N_ATOMS" "$thermo_csv")
 EOF
 
-  echo "exp05[rho*=$rho]: our U*=$mean_u p*=$mean_p T*=$mean_t (NIST U*=$nist_u p*=$nist_p T*=$nist_t, target=$nist_t)"
-  echo "$rho,$seed,$mean_t,$mean_u,$mean_p,$nist_t,$nist_u,$nist_p" >> "$ROWS"
+  # Deviations and the verdict are computed here and written into the CSV.
+  # data/nist/README.md promises this file carries "their deviation from
+  # this table"; now it does. And since two of this project's experiments
+  # fail, the machine-readable deliverable has to say so on its own.
+  read -r delta_u delta_p delta_t status <<EOF2
+$(awk -v ou="$mean_u" -v nu="$nist_u" -v op="$mean_p" -v np="$nist_p" -v ot="$mean_t" -v nt="$nist_t" \
+      -v ut="$DELTA_U_TOL" -v pt="$DELTA_P_TOL" -v tt="$DELTA_T_TOL" '
+  BEGIN {
+    du = ou-nu; dp = op-np; dt = ot-nt
+    adu = (du<0) ? -du : du
+    adp = (dp<0) ? -dp : dp
+    adt = (dt<0) ? -dt : dt
+    printf "%.6f %.6f %.6f %s", du, dp, dt, ((adu<=ut && adp<=pt && adt<=tt) ? "PASS" : "FAIL")
+  }')
+EOF2
+
+  echo "exp05[rho*=$rho]: our U*=$mean_u p*=$mean_p T*=$mean_t (NIST U*=$nist_u p*=$nist_p T*=$nist_t) deltas U*=$delta_u p*=$delta_p T*=$delta_t -> $status"
+  echo "$rho,$seed,$mean_t,$mean_u,$mean_p,$nist_t,$nist_u,$nist_p,$delta_t,$delta_u,$delta_p,$status" >> "$ROWS"
 done <<< "$STATE_POINTS"
 
 {
@@ -137,38 +156,29 @@ done <<< "$STATE_POINTS"
   echo "# production_steps: $PRODUCTION (NVT, Nose-Hoover chain, pinned at this row's nist_T_star)"
   echo "# protocol_correction: production changed from NVE at a shared T*=0.85 to NVT (Nose-Hoover)"
   echo "#       pinned at each row's own NIST-quoted T*, after a review found the old NVE T* drift"
-  echo "#       (0.8256-0.8713) confounded the U*/p* comparison -- see task-15 report"
+  echo "#       (0.8256-0.8713) confounded the U*/p* comparison -- see docs/findings/2026-09-21-rho090-outlier.md"
   echo "# tolerance: |delta U*| <= $DELTA_U_TOL, |delta p*| <= $DELTA_P_TOL, |delta T*| <= $DELTA_T_TOL (all absolute, picked a priori)"
   echo "# note: raw per-step thermo-out (30000 rows/density) is not committed -- every flag above"
   echo "#       is fixed except --density, --temperature and --seed (this row's rho_star, nist_T_star"
   echo "#       and seed columns), so 'moldyn_run --cells $CELLS --density RHO --temperature NIST_T"
   echo "#       --cutoff $CUTOFF --skin $SKIN --dt $DT --equilibrate $EQUILIBRATE --production $PRODUCTION"
   echo "#       --thermostat nose-hoover --seed SEED --thermo-out FILE' reproduces it exactly"
-  echo "rho_star,seed,our_T_star,our_U_star,our_p_star,nist_T_star,nist_U_star,nist_p_star"
+  echo "# deviation_sign_convention: delta_X = ours - NIST"
+  echo "# findings: docs/findings/2026-09-21-rho090-outlier.md (the rho*=0.900 row)"
+  echo "rho_star,seed,our_T_star,our_U_star,our_p_star,nist_T_star,nist_U_star,nist_p_star,delta_T_star,delta_U_star,delta_p_star,status"
   cat "$ROWS"
 } > "$SUMMARY_CSV"
 
 echo "exp05: wrote $SUMMARY_CSV"
 
 FAIL=0
-while IFS=, read -r rho seed our_t our_u our_p nist_t nist_u nist_p; do
-  result=$(awk -v ou="$our_u" -v nu="$nist_u" -v op="$our_p" -v np="$nist_p" -v ot="$our_t" -v nt="$nist_t" \
-            -v ut="$DELTA_U_TOL" -v pt="$DELTA_P_TOL" -v tt="$DELTA_T_TOL" '
-    BEGIN {
-      du = (ou-nu<0) ? nu-ou : ou-nu
-      dp = (op-np<0) ? np-op : op-np
-      dtem = (ot-nt<0) ? nt-ot : ot-nt
-      up_ok = (du<=ut && dp<=pt) ? "yes" : "no"
-      t_ok = (dtem<=tt) ? "yes" : "no"
-      printf "%s %s %.6f %.6f %.6f", up_ok, t_ok, du, dp, dtem
-    }')
-  read -r up_ok t_ok du dp dtem <<< "$result"
-
-  if [ "$t_ok" != "yes" ]; then
-    echo "exp05[rho*=$rho]: FAIL -- Nose-Hoover did not pin T* (our=$our_t, target=$nist_t, |delta|=$dtem > $DELTA_T_TOL)" >&2
+while IFS=, read -r rho seed our_t our_u our_p nist_t nist_u nist_p dt_star du dp status; do
+  t_ok=$(awk -v d="$dt_star" -v tt="$DELTA_T_TOL" 'BEGIN { ad=(d<0)?-d:d; print (ad<=tt) ? "yes" : "no" }')
+  if [ "$status" != "PASS" ] && [ "$t_ok" != "yes" ]; then
+    echo "exp05[rho*=$rho]: FAIL -- Nose-Hoover did not pin T* (our=$our_t, target=$nist_t, delta=$dt_star, tolerance $DELTA_T_TOL)" >&2
     FAIL=1
-  elif [ "$up_ok" != "yes" ]; then
-    echo "exp05[rho*=$rho]: FAIL -- our (U*=$our_u, p*=$our_p) vs NIST (U*=$nist_u, p*=$nist_p) outside tolerance (T* pinned OK, |dT*|=$dtem)" >&2
+  elif [ "$status" != "PASS" ]; then
+    echo "exp05[rho*=$rho]: FAIL -- our (U*=$our_u, p*=$our_p) vs NIST (U*=$nist_u, p*=$nist_p) outside tolerance: delta_U*=$du, delta_p*=$dp (T* pinned OK, delta_T*=$dt_star)" >&2
     FAIL=1
   else
     echo "exp05[rho*=$rho]: PASS -- our (U*=$our_u, p*=$our_p, T*=$our_t) vs NIST (U*=$nist_u, p*=$nist_p, T*=$nist_t) within tolerance"

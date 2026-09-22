@@ -67,19 +67,22 @@ def main() -> None:
                       textcoords="offset points", xytext=(0, y_off), fontsize=7.5, ha="center",
                       color="#52514e")
 
-    # Flag rho*=0.9: far outside tolerance and investigated (see
-    # data/nist/README.md / task-15 report). Not a rigid, zero-diffusion
-    # crystal (D*>0, liquid-like g(r) -- see exp05b), but not a
-    # fully-equilibrated liquid either: most likely residual order from
-    # the fcc starting lattice that 50 t* of equilibration did not fully
-    # randomize this close to the freezing line, not a units/convention
-    # bug (the other five points, and the independent exp01 NIST
-    # energy/virial check, all agree well) and not a temperature-offset
-    # artifact (T* is now pinned here too, |dT*| small).
+    # Flag rho*=0.9: far outside tolerance, and diagnosed. The
+    # simulation never melts there -- it stays in the fcc lattice it was
+    # started from, with D_msd ~ 1e-5 against NIST's tabulated 0.027 in
+    # all three diagnostic seeds (experiment 05b). An ordered lattice is
+    # both more cohesive (U* too negative) and less compressed at fixed
+    # density (p* far too low), which is exactly the pair of signs seen
+    # here. Not a units/convention bug -- the other five densities use
+    # the identical code path and agree, as does the independent exp01
+    # NIST energy/virial check -- and not a temperature-offset artifact,
+    # since T* is pinned here too. Full write-up:
+    # docs/findings/2026-09-21-rho090-outlier.md
     du_last = abs(float(d["our_U_star"][-1]) - float(d["nist_U_star"][-1]))
     if du_last > 0.1:
-        ax_u.annotate("investigated outlier\n(see report)", (rho[-1], d["our_U_star"][-1]),
-                      textcoords="offset points", xytext=(-70, -18), fontsize=8, color=BAD,
+        ax_u.annotate("never melts — stays fcc\n(docs/findings/, exp05b)",
+                      (rho[-1], d["our_U_star"][-1]),
+                      textcoords="offset points", xytext=(-72, -20), fontsize=8, color=BAD,
                       fontweight="bold", ha="center")
 
     fig.tight_layout()

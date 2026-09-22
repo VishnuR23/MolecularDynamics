@@ -7,14 +7,16 @@
 # broken, so this script stops immediately, matching CI.
 #
 # Experiments 03-05 check *physics reproduction* against the literature.
-# Per the task-15 brief: "If a computed number disagrees with the
-# literature, that is a finding to investigate and report -- not a
-# tolerance to widen." A failing threshold there is a result, not a bug,
-# so this script keeps going (every experiment still gets its CSV and PNG)
-# but remembers that a disagreement was found and exits non-zero at the
-# end, so `make reproduce`'s own exit status is still honest. See
-# .superpowers/sdd/2026-09-20-phase1-lennard-jones/task-15-report.md for
-# what was found and investigated.
+# The standing rule for this repository is that a computed number which
+# disagrees with the literature is a finding to investigate and report,
+# not a tolerance to widen. A failing threshold there is a result, not a
+# bug, so this script keeps going (every experiment still gets its CSV and
+# PNG) but remembers that a disagreement was found and exits non-zero at
+# the end, so `make reproduce`'s own exit status is still honest.
+#
+# Two experiments currently disagree, and both are written up:
+#   docs/findings/2026-09-21-exp04-einstein-vs-green-kubo.md
+#   docs/findings/2026-09-21-rho090-outlier.md
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -22,7 +24,23 @@ ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 PYTHON="$ROOT/.venv/bin/python3"
 
 if [ ! -x "$PYTHON" ]; then
-  echo "run_all: $PYTHON not found -- run 'uv venv && uv pip install -r experiments/requirements.txt' first" >&2
+  cat >&2 <<MSG
+run_all: $PYTHON not found.
+
+The plotting virtualenv is gitignored, so a fresh clone does not have one.
+'make reproduce' builds it for you; if you are running this script directly,
+create it first with exactly:
+
+  make venv
+
+or, by hand:
+
+  uv venv .venv && uv pip install --python .venv/bin/python3 -r experiments/requirements.txt
+
+or, without uv:
+
+  python3 -m venv .venv && .venv/bin/python3 -m pip install -r experiments/requirements.txt
+MSG
   exit 1
 fi
 
@@ -44,7 +62,7 @@ for exp in $PHYSICS_EXPERIMENTS; do
   tag="${exp%%_*}"
   echo "==== $exp: simulating ===="
   if ! bash "$SCRIPT_DIR/${exp}.sh"; then
-    echo "run_all: $exp reported a literature disagreement -- see its output above and the task-15 report" >&2
+    echo "run_all: $exp reported a literature disagreement -- see its output above and docs/findings/" >&2
     FOUND_DISAGREEMENT=1
   fi
   echo "==== $exp: plotting ===="
@@ -55,6 +73,6 @@ END=$(date +%s)
 echo "==== run_all: all experiments complete in $((END-START))s ===="
 
 if [ "$FOUND_DISAGREEMENT" -ne 0 ]; then
-  echo "run_all: one or more physics experiments (03-05) disagreed with the literature outside tolerance -- see task-15 report for the investigation" >&2
+  echo "run_all: one or more physics experiments (03-05) disagreed with the literature outside tolerance -- see docs/findings/ for the investigations" >&2
   exit 1
 fi

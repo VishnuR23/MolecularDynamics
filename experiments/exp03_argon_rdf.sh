@@ -9,12 +9,13 @@
 #     tabulated afterwards as "the" LJ argon liquid point
 #     -> rho* = 0.8442, T* = 0.7280   (secondary state point)
 #
-# The task brief's plan mislabelled 0.8442/0.7280 as Rahman's; that is
-# actually Verlet's. Both are run here and labelled correctly -- see
-# data/nist/README.md is NOT the source for these (they are not from the
-# NIST SRSW; see the reduction above and the task-15 report for how the
-# reduced values were obtained from the physical (T, rho) each paper
-# reports).
+# The plan mislabelled 0.8442/0.7280 as Rahman's; that is actually
+# Verlet's. Both are run here and labelled correctly. data/nist/README.md
+# is NOT the source for these -- they are not from the NIST SRSW. The
+# reduction from each paper's physical (T, rho) to the reduced values
+# above is spelled out at the top of this header, and the same constants
+# reduce Rahman's measured diffusion coefficient in
+# exp04_argon_diffusion.sh.
 #
 # N=864 (fcc, 6 cells/side), a standard choice in this literature. Asserts
 # the g(r) first-peak position and height land in a band drawn from the
@@ -32,7 +33,10 @@ BIN="$ROOT/build/apps/moldyn_run"
 RESULTS="$ROOT/results"
 mkdir -p "$RESULTS"
 
-GIT_SHA="$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo unknown)"
+# `git describe --always --dirty`, not `rev-parse --short HEAD`: a run
+# from a modified working tree is stamped `<sha>-dirty`, so it cannot
+# masquerade as the clean commit it was derived from.
+GIT_SHA="$(git -C "$ROOT" describe --always --dirty 2>/dev/null || echo unknown)"
 HOST="$(uname -s) $(uname -m)"
 
 CELLS=6
@@ -70,8 +74,17 @@ $(awk -F, -v lo="$PEAK_LO" -v hi="$PEAK_HI" '
   ' "$rdf_csv")
 EOF
 
-  echo "exp03[$label]: first peak at r*=$peak_r, g=$peak_g"
-  echo "$label,$rho,$temp,$seed,$peak_r,$peak_g,$rdf_csv" >> "$SUMMARY_ROWS"
+  # Each row carries its own verdict: two of this project's experiments do
+  # fail, and the CSVs are the machine-readable deliverable, so a reader of
+  # the data alone must be able to see the outcome and not just the
+  # tolerance it was measured against.
+  local status
+  status=$(awk -v r="$peak_r" -v g="$peak_g" -v rmin="$PEAK_POS_MIN" -v rmax="$PEAK_POS_MAX" \
+                -v gmin="$PEAK_HEIGHT_MIN" -v gmax="$PEAK_HEIGHT_MAX" \
+                'BEGIN { print (r>=rmin && r<=rmax && g>=gmin && g<=gmax) ? "PASS" : "FAIL" }')
+
+  echo "exp03[$label]: first peak at r*=$peak_r, g=$peak_g ($status)"
+  echo "$label,$rho,$temp,$seed,$peak_r,$peak_g,$status,$rdf_csv" >> "$SUMMARY_ROWS"
 }
 
 SUMMARY_CSV="$RESULTS/exp03_argon_rdf.csv"
@@ -96,18 +109,15 @@ run_one verlet 0.8442 0.7280 3002
   echo "# peak_search_window: r* in [$PEAK_LO, $PEAK_HI]"
   echo "# tolerance: first-peak r* in [$PEAK_POS_MIN, $PEAK_POS_MAX], height in [$PEAK_HEIGHT_MIN, $PEAK_HEIGHT_MAX]"
   echo "# reference: qualitative literature band, not an exact tabulated value (Rahman 1964; Verlet 1967; Hansen & McDonald, Theory of Simple Liquids)"
-  echo "label,rho_star,T_star,seed,peak_r_star,peak_g,rdf_csv"
+  echo "label,rho_star,T_star,seed,peak_r_star,peak_g,status,rdf_csv"
   cat "$SUMMARY_ROWS"
 } > "$SUMMARY_CSV"
 
 echo "exp03: wrote $SUMMARY_CSV"
 
 FAIL=0
-while IFS=, read -r label rho temp seed peak_r peak_g rdf_csv; do
-  ok=$(awk -v r="$peak_r" -v g="$peak_g" -v rmin="$PEAK_POS_MIN" -v rmax="$PEAK_POS_MAX" \
-            -v gmin="$PEAK_HEIGHT_MIN" -v gmax="$PEAK_HEIGHT_MAX" \
-            'BEGIN { print (r>=rmin && r<=rmax && g>=gmin && g<=gmax) ? "yes" : "no" }')
-  if [ "$ok" != "yes" ]; then
+while IFS=, read -r label rho temp seed peak_r peak_g status rdf_csv; do
+  if [ "$status" != "PASS" ]; then
     echo "exp03[$label]: FAIL -- peak r*=$peak_r g=$peak_g outside [$PEAK_POS_MIN,$PEAK_POS_MAX] x [$PEAK_HEIGHT_MIN,$PEAK_HEIGHT_MAX]" >&2
     FAIL=1
   else
