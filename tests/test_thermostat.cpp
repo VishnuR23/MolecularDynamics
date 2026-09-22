@@ -4,6 +4,11 @@
 #include "moldyn/forcefield/lennard_jones.hpp"
 #include "moldyn/util/lattice.hpp"
 #include "moldyn/core/system.hpp"
+// Vec3 is used directly below (sys.velocity(a)). Include what you use:
+// this file built on libc++ without it purely by transitive luck, and
+// commit f162ea6 fixed exactly this failure mode after it broke the Linux
+// (libstdc++) CI. Do not let it come back.
+#include "moldyn/core/vec3.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -46,7 +51,15 @@ TEST_CASE("Langevin BAOAB: equipartition holds after equilibration") {
     auto forces = [&](System& s) { return lj.computeForces(s).energy; };
     forces(sys);
 
-    const std::size_t dof = 3 * sys.size() - 3;
+    // dof = 3N, not 3N-3. Langevin gives every particle independent
+    // noise, so the centre-of-mass momentum random-walks and thermalises
+    // along with everything else: all 3N degrees of freedom carry kT/2.
+    // Subtracting 3 here would be correct only for a momentum-conserving
+    // integrator started from p_com = 0, and it inflated the measured
+    // temperature by 3N/(3N-3) = 324/321 = 1.00935 -- which is most of
+    // the 1.00753 bias this test used to report and absorb inside its
+    // +-2% band. apps/moldyn_run.cpp makes the same distinction by phase.
+    const std::size_t dof = 3 * sys.size();
 
     // Equilibrate for well over a correlation time before sampling.
     const int equilSteps = 3000;
@@ -134,7 +147,15 @@ TEST_CASE("Langevin BAOAB relaxes a hot start to the target temperature") {
     auto forces = [&](System& s) { return lj.computeForces(s).energy; };
     forces(sys);
 
-    const std::size_t dof = 3 * sys.size() - 3;
+    // dof = 3N, not 3N-3. Langevin gives every particle independent
+    // noise, so the centre-of-mass momentum random-walks and thermalises
+    // along with everything else: all 3N degrees of freedom carry kT/2.
+    // Subtracting 3 here would be correct only for a momentum-conserving
+    // integrator started from p_com = 0, and it inflated the measured
+    // temperature by 3N/(3N-3) = 324/321 = 1.00935 -- which is most of
+    // the 1.00753 bias this test used to report and absorb inside its
+    // +-2% band. apps/moldyn_run.cpp makes the same distinction by phase.
+    const std::size_t dof = 3 * sys.size();
 
     // Let the hot start relax, then confirm it settled near the target
     // rather than staying near the hot starting temperature.
@@ -168,6 +189,10 @@ TEST_CASE("Nose-Hoover chain reaches the target temperature") {
 
     System sys = fccLattice(cells, density, hotT, 55);
     LennardJones lj(1.0, 1.0, 2.5, Truncation::LinearForceShift);
+    // dof = 3N-3 is right here: the Nose-Hoover chain only ever rescales
+    // every velocity by one common factor, so it conserves total
+    // momentum, and fccLattice() starts this system at p_com = 0. Those
+    // three degrees of freedom stay frozen for the whole run.
     const std::size_t dof = 3 * sys.size() - 3;
     NoseHooverChain thermostat(dt, targetT, tau, chainLength, dof);
     auto forces = [&](System& s) { return lj.computeForces(s).energy; };
@@ -211,6 +236,10 @@ TEST_CASE("Nose-Hoover chain conserves the extended Hamiltonian") {
 
     System sys = fccLattice(cells, density, targetT, 56);
     LennardJones lj(1.0, 1.0, 2.5, Truncation::LinearForceShift);
+    // dof = 3N-3 is right here: the Nose-Hoover chain only ever rescales
+    // every velocity by one common factor, so it conserves total
+    // momentum, and fccLattice() starts this system at p_com = 0. Those
+    // three degrees of freedom stay frozen for the whole run.
     const std::size_t dof = 3 * sys.size() - 3;
     NoseHooverChain thermostat(dt, targetT, tau, chainLength, dof);
     auto forces = [&](System& s) { return lj.computeForces(s).energy; };
