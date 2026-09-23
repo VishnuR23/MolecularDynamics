@@ -120,21 +120,25 @@ def load_csv(path):
 def _git_sha() -> str:
     """The revision this figure was generated from.
 
-    `git describe --always --dirty`, not `rev-parse --short HEAD`: a figure
-    rendered from a modified working tree is stamped `<sha>-dirty`, so it
-    cannot masquerade as the clean commit it was derived from. The same
-    command stamps every CSV (experiments/*.sh) and the moldyn_run binary
-    itself (apps/GitSha.cmake), so all three agree.
+    The revision of the CODE, so a figure rendered from a modified working
+    tree is stamped `<sha>-dirty` and cannot masquerade as the clean commit
+    it came from. Dirtiness ignores results/: the experiments write into the
+    repository, so regenerating one would otherwise mark every later figure
+    dirty for a reason unrelated to the code. Matches experiments/git_sha.sh
+    and apps/GitSha.cmake, so all three agree.
     """
     try:
-        out = subprocess.run(
-            ["git", "describe", "--always", "--dirty"],
-            cwd=ROOT,
-            capture_output=True,
-            check=True,
-            text=True,
-        )
-        return out.stdout.strip() or "unknown"
+        sha = subprocess.run(
+            ["git", "describe", "--always"],
+            cwd=ROOT, capture_output=True, check=True, text=True,
+        ).stdout.strip()
+        if not sha:
+            return "unknown"
+        dirt = subprocess.run(
+            ["git", "status", "--porcelain", "--", ".", ":(exclude)results"],
+            cwd=ROOT, capture_output=True, check=True, text=True,
+        ).stdout.strip()
+        return f"{sha}-dirty" if dirt else sha
     except Exception:
         return "unknown"
 

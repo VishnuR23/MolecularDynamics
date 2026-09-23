@@ -6,21 +6,32 @@
 # Requires: MOLDYN_SOURCE_DIR (the repository root), MOLDYN_OUTPUT (the
 # header to write).
 #
-# `git describe --always --dirty` -- not `rev-parse --short HEAD` -- so a
-# build from a modified working tree is stamped `<sha>-dirty` and cannot
-# masquerade as the clean commit it was derived from. A result stamped
-# with a bare sha is a promise that the tree was exactly that commit.
+# The stamp is the revision of the CODE, so a build from a modified tree
+# is marked `<sha>-dirty` and cannot masquerade as the clean commit it came
+# from. Dirtiness deliberately ignores results/: the experiments write into
+# the repository, so regenerating one would otherwise mark every later run
+# dirty for a reason unrelated to the code. This matches
+# experiments/git_sha.sh and plot_common.py, so all three agree.
 
 execute_process(
-  COMMAND git describe --always --dirty
+  COMMAND git describe --always
   WORKING_DIRECTORY ${MOLDYN_SOURCE_DIR}
   OUTPUT_VARIABLE MOLDYN_GIT_SHA
   OUTPUT_STRIP_TRAILING_WHITESPACE
   ERROR_QUIET
   RESULT_VARIABLE git_result)
 
+execute_process(
+  COMMAND git status --porcelain -- . ":(exclude)results"
+  WORKING_DIRECTORY ${MOLDYN_SOURCE_DIR}
+  OUTPUT_VARIABLE MOLDYN_GIT_DIRTY
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+  ERROR_QUIET)
+
 if(NOT git_result EQUAL 0 OR NOT MOLDYN_GIT_SHA)
   set(MOLDYN_GIT_SHA "unknown")
+elseif(MOLDYN_GIT_DIRTY)
+  set(MOLDYN_GIT_SHA "${MOLDYN_GIT_SHA}-dirty")
 endif()
 
 # configure_file only rewrites the output when its content actually

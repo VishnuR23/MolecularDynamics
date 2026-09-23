@@ -41,10 +41,8 @@ BIN="$ROOT/build/apps/moldyn_run"
 RESULTS="$ROOT/results"
 mkdir -p "$RESULTS"
 
-# `git describe --always --dirty`, not `rev-parse --short HEAD`: a run
-# from a modified working tree is stamped `<sha>-dirty`, so it cannot
-# masquerade as the clean commit it was derived from.
-GIT_SHA="$(git -C "$ROOT" describe --always --dirty 2>/dev/null || echo unknown)"
+. "$(dirname "${BASH_SOURCE[0]}")/git_sha.sh"
+GIT_SHA="$(moldyn_git_sha "$ROOT")"
 HOST="$(uname -s) $(uname -m)"
 
 CELLS=5              # N = 4*5^3 = 500, matching exp05 and NIST
