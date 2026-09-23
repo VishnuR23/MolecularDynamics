@@ -1,11 +1,21 @@
-# purpose: evidence for experiment 05's rho*=0.9 outlier investigation -- see task-15 report
-# command: /Users/vishnu/molecular/build/apps/moldyn_run --cells 5 --density 0.900 --temperature 0.851 --cutoff 3.0 --skin 0.3 --dt 0.005 --equilibrate 10000 --production 20000 --thermostat none --seed 5006 --rdf-out /Users/vishnu/molecular/results/exp05b_rdf_rho0.900.csv --msd-out /Users/vishnu/molecular/results/exp05b_msd_rho0.900.csv
-# git_sha: 97661a0
+# purpose: characterise the state experiment 05 actually reaches at its one
+#       failing density -- see docs/findings/2026-09-21-rho090-outlier.md
+# git_sha: 7947d94
 # host: Darwin arm64
 # units: reduced Lennard-Jones units (sigma = epsilon = m = 1)
 # state_point: rho*=0.900, T*=0.851 (NIST's own quoted T* for this row)
+# command_template: /Users/vishnu/molecular/build/apps/moldyn_run --cells 5 --density 0.900 --temperature 0.851
+#       --cutoff 3.0 --skin 0.3 --dt 0.005 --equilibrate 10000
+#       --production 20000 --thermostat none --seed SEED
+#       --rdf-out results/exp05b_rdf_rho0.900_seedSEED.csv
+#       --msd-out results/exp05b_msd_rho0.900_seedSEED.csv
+# seeds: 5006 5007 5008 (independent replicas; 5006 is exp05's own seed for this row)
+# primary_seed: 5006 (the trajectory plotted in the figure)
 # nist_D_star: 0.027 (data/nist/README.md, same rho*/T*, fully-equilibrated liquid)
-# d_floor: 0.005 (a priori 'not frozen' threshold, see script header)
-# tolerance: D_msd > 0.005
-rho_star,T_star,seed,D_msd,D_vacf,nist_D_star,delta_D_msd,rdf_first_peak_r,rdf_first_peak_g,rdf_tail_g
-0.900,0.851,5006,0.02034092596,0.04063175554,0.027,-0.006659,1.097670,3.114270,1.1039
+# d_floor: 0.005 (a priori 'not frozen' threshold, see script header -- unchanged)
+# tolerance: D_msd > 0.005, every seed
+# outcome: 0 of 3 seeds cleared the floor
+rho_star,T_star,seed,D_msd,D_vacf,nist_D_star,delta_D_msd,rdf_first_peak_r,rdf_first_peak_g,rdf_tail_g,status
+0.900,0.851,5006,1.535756809e-05,0.0001085453167,0.027,-0.026985,1.097670,3.125424,1.1024,FAIL
+0.900,0.851,5007,2.911635731e-05,0.0002498225148,0.027,-0.026971,1.097670,3.121272,1.1015,FAIL
+0.900,0.851,5008,3.743697938e-05,3.262563707e-05,0.027,-0.026963,1.097670,3.084854,1.1019,FAIL
