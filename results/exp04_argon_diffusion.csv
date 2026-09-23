@@ -1,6 +1,6 @@
 # state_point_rahman: rho*=0.8177 T*=0.7880 (Rahman 1964, Phys. Rev. 136, A405)
 # state_point_verlet: rho*=0.8442 T*=0.7280 (Verlet 1967, Phys. Rev. 159, 98)
-# git_sha: 97661a0
+# git_sha: f76287d-dirty
 # host: Darwin arm64
 # units: reduced Lennard-Jones units (sigma = epsilon = m = 1)
 # cells: 6 (N=864)
@@ -8,24 +8,36 @@
 # skin: 0.3
 # dt: 0.005
 # equilibrate_steps: 5000 (Langevin)
-# production_steps: 2000 (NVE)
+# production_steps: 2000 (NVE, centre-of-mass momentum re-zeroed at the
+#       equilibration/production boundary so p_com stays zero through production)
 # n_replicas_per_state_point: 8
 # error_bars: standard error of the mean across independent replicas (see script header)
-# tolerance: |mean(D_msd) - mean(D_vacf)| <= se(D_msd) + se(D_vacf), per state point
-label,rho_star,T_star,seed,D_msd,D_vacf
-rahman,0.8177,0.7880,4001,0.04348640538,0.04985667131
-rahman,0.8177,0.7880,4002,0.04702101314,0.05016826176
-rahman,0.8177,0.7880,4003,0.04579885539,0.05073391564
-rahman,0.8177,0.7880,4004,0.04512365825,0.04586280321
-rahman,0.8177,0.7880,4005,0.04859565149,0.05031512309
-rahman,0.8177,0.7880,4006,0.04487100462,0.04889786768
-rahman,0.8177,0.7880,4007,0.04414117756,0.04189071599
-rahman,0.8177,0.7880,4008,0.04372582561,0.04612471519
-verlet,0.8442,0.7280,4101,0.03247364525,0.03250219795
-verlet,0.8442,0.7280,4102,0.03559672225,0.0349688507
-verlet,0.8442,0.7280,4103,0.03994995169,0.04665368608
-verlet,0.8442,0.7280,4104,0.04234643049,0.04970291672
-verlet,0.8442,0.7280,4105,0.02889857934,0.03123306092
-verlet,0.8442,0.7280,4106,0.03927150515,0.04093369836
-verlet,0.8442,0.7280,4107,0.03311406518,0.03353256349
-verlet,0.8442,0.7280,4108,0.03367041493,0.03737861717
+# tolerance_estimators: |mean(D_msd) - mean(D_vacf)| <= se(D_msd) + se(D_vacf), per state point
+# tolerance_experiment: |mean(D_msd) - D_exp_star| <= 0.10 * D_exp_star, Rahman point only
+# experimental_reference: D = 2.43e-5 cm^2/s (Rahman 1964, liquid argon, 94.4 K, 1.374 g/cm3)
+#       reduced by sigma*sqrt(eps/m) = 5.3767e-4 cm^2/s (sigma=3.405 A, eps/kB=119.8 K,
+#       M=39.948 g/mol) -> D_exp_star = 0.0452
+# result_rahman: mean_D_msd=0.045349 se=0.000771 mean_D_vacf=0.044923 se=0.000911
+#       D_vacf-D_msd=-0.000426 combined_se=0.001682 estimators=PASS
+# result_verlet: mean_D_msd=0.031635 se=0.000605 mean_D_vacf=0.031880 se=0.000632
+#       D_vacf-D_msd=0.000245 combined_se=0.001237 estimators=PASS
+# result_experiment: mean_D_msd=0.045349 vs D_exp_star=0.0452
+#       delta=0.000149 (0.330%) experiment=PASS
+# findings: docs/findings/2026-09-21-exp04-einstein-vs-green-kubo.md
+label,rho_star,T_star,seed,D_msd,D_vacf,D_exp_star,estimator_status,experiment_status
+rahman,0.8177,0.7880,4001,0.04546346168,0.04671225285,0.0452,PASS,PASS
+rahman,0.8177,0.7880,4002,0.04617456197,0.04436561638,0.0452,PASS,PASS
+rahman,0.8177,0.7880,4003,0.04299560855,0.04425608071,0.0452,PASS,PASS
+rahman,0.8177,0.7880,4004,0.04327861812,0.04292987383,0.0452,PASS,PASS
+rahman,0.8177,0.7880,4005,0.04754296579,0.04727310648,0.0452,PASS,PASS
+rahman,0.8177,0.7880,4006,0.04687981728,0.04928268795,0.0452,PASS,PASS
+rahman,0.8177,0.7880,4007,0.0480208554,0.04251857876,0.0452,PASS,PASS
+rahman,0.8177,0.7880,4008,0.04243952795,0.0420474221,0.0452,PASS,PASS
+verlet,0.8442,0.7280,4101,0.03389309994,0.03319187563,NA,PASS,NA
+verlet,0.8442,0.7280,4102,0.03037099709,0.03006866338,NA,PASS,NA
+verlet,0.8442,0.7280,4103,0.03269015364,0.03404224234,NA,PASS,NA
+verlet,0.8442,0.7280,4104,0.03031132123,0.0325840032,NA,PASS,NA
+verlet,0.8442,0.7280,4105,0.02951392695,0.02935468725,NA,PASS,NA
+verlet,0.8442,0.7280,4106,0.03393968771,0.03356596164,NA,PASS,NA
+verlet,0.8442,0.7280,4107,0.03178709021,0.03206841158,NA,PASS,NA
+verlet,0.8442,0.7280,4108,0.03057233132,0.0301649241,NA,PASS,NA

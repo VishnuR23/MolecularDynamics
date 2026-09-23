@@ -1,7 +1,7 @@
 # source: https://mmlapps.nist.gov/srs/LJ_PURE/md.htm (NIST SRSW LJ fluid MD results)
 # retrieved: 2026-09-21
 # reference_convention: 3 sigma cutoff + standard long range corrections (matches our --truncation truncated)
-# git_sha: 97661a0
+# git_sha: f76287d-dirty
 # host: Darwin arm64
 # units: reduced Lennard-Jones units (sigma = epsilon = m = 1)
 # cells: 5 (N=500, matching NIST's N exactly)
@@ -12,17 +12,19 @@
 # production_steps: 20000 (NVT, Nose-Hoover chain, pinned at this row's nist_T_star)
 # protocol_correction: production changed from NVE at a shared T*=0.85 to NVT (Nose-Hoover)
 #       pinned at each row's own NIST-quoted T*, after a review found the old NVE T* drift
-#       (0.8256-0.8713) confounded the U*/p* comparison -- see task-15 report
+#       (0.8256-0.8713) confounded the U*/p* comparison -- see docs/findings/2026-09-21-rho090-outlier.md
 # tolerance: |delta U*| <= 0.1, |delta p*| <= 0.3, |delta T*| <= 0.02 (all absolute, picked a priori)
 # note: raw per-step thermo-out (30000 rows/density) is not committed -- every flag above
 #       is fixed except --density, --temperature and --seed (this row's rho_star, nist_T_star
 #       and seed columns), so 'moldyn_run --cells 5 --density RHO --temperature NIST_T
 #       --cutoff 3.0 --skin 0.3 --dt 0.005 --equilibrate 10000 --production 20000
 #       --thermostat nose-hoover --seed SEED --thermo-out FILE' reproduces it exactly
-rho_star,seed,our_T_star,our_U_star,our_p_star,nist_T_star,nist_U_star,nist_p_star
-0.776,5001,0.851672,-5.510863,0.008240,0.851,-5.517,0.030
-0.780,5002,0.851215,-5.540721,0.030960,0.853,-5.533,0.072
-0.820,5003,0.851894,-5.793228,0.561636,0.852,-5.803,0.573
-0.840,5004,0.852558,-5.917598,0.866750,0.851,-5.909,0.910
-0.860,5005,0.846517,-6.034359,1.236403,0.849,-6.027,1.282
-0.900,5006,0.848308,-6.637300,0.015356,0.851,-6.234,2.544
+# deviation_sign_convention: delta_X = ours - NIST
+# findings: docs/findings/2026-09-21-rho090-outlier.md (the rho*=0.900 row)
+rho_star,seed,our_T_star,our_U_star,our_p_star,nist_T_star,nist_U_star,nist_p_star,delta_T_star,delta_U_star,delta_p_star,status
+0.776,5001,0.848088,-5.513598,-0.009407,0.851,-5.517,0.030,-0.002912,0.003402,-0.039407,PASS
+0.780,5002,0.852485,-5.535366,0.058264,0.853,-5.533,0.072,-0.000515,-0.002366,-0.013736,PASS
+0.820,5003,0.851077,-5.792515,0.555275,0.852,-5.803,0.573,-0.000923,0.010485,-0.017725,PASS
+0.840,5004,0.848315,-5.914819,0.878634,0.851,-5.909,0.910,-0.002685,-0.005819,-0.031366,PASS
+0.860,5005,0.852503,-6.027213,1.284027,0.849,-6.027,1.282,0.003503,-0.000213,0.002027,PASS
+0.900,5006,0.849225,-6.623853,0.092106,0.851,-6.234,2.544,-0.001775,-0.389853,-2.451894,FAIL

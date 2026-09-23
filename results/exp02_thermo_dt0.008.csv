@@ -1,10 +1,11 @@
 # command: /Users/vishnu/molecular/build/apps/moldyn_run --cells 3 --density 0.80 --temperature 1.0 --cutoff 2.5 --skin 0.4 --dt 0.008 --equilibrate 0 --production 125 --thermostat none --seed 12345 --truncation linear-force-shift --thermo-out /Users/vishnu/molecular/results/exp02_thermo_dt0.008.csv
-# git_sha: 97661a0
+# git_sha: f76287d
 # host: Darwin arm64
 # units: reduced Lennard-Jones units (sigma = epsilon = mass = kB = 1)
 # truncation: linear-force-shift
 # pressure_includes_tail_correction: no
 # potential_energy_includes_tail_correction: no
+# temperature_dof: 3N=324 while Langevin drives (equilibration, and Langevin production), 3N-3=321 under the momentum-conserving integrators (NVE, Nose-Hoover), for which the centre-of-mass momentum is re-zeroed at the equilibration/production boundary
 step,time,phase,potential_energy,kinetic_energy,total_energy,temperature,pressure
 0,0,start,-574.6360249,152.6408823,-421.9951426,0.9510335345,-4.907078898
 1,0.008,production,-574.2651359,152.2657447,-421.9993913,0.9486962285,-4.880676153

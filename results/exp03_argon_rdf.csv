@@ -1,6 +1,6 @@
 # state_point_rahman: rho*=0.8177 T*=0.7880 (Rahman 1964, Phys. Rev. 136, A405; 94.4 K, 1.374 g/cm3, sigma=3.405 A, eps/kB=119.8 K, M=39.948 g/mol)
 # state_point_verlet: rho*=0.8442 T*=0.7280 (Verlet 1967, Phys. Rev. 159, 98)
-# git_sha: 97661a0
+# git_sha: f76287d-dirty
 # host: Darwin arm64
 # units: reduced Lennard-Jones units (sigma = epsilon = m = 1)
 # cells: 6 (N=864)
@@ -12,6 +12,6 @@
 # peak_search_window: r* in [0.85, 1.40]
 # tolerance: first-peak r* in [1.00, 1.25], height in [2.3, 3.6]
 # reference: qualitative literature band, not an exact tabulated value (Rahman 1964; Verlet 1967; Hansen & McDonald, Theory of Simple Liquids)
-label,rho_star,T_star,seed,peak_r_star,peak_g,rdf_csv
-rahman,0.8177,0.7880,3001,1.085497,2.854798,/Users/vishnu/molecular/results/exp03_rdf_rahman.csv
-verlet,0.8442,0.7280,3002,1.074018,2.975666,/Users/vishnu/molecular/results/exp03_rdf_verlet.csv
+label,rho_star,T_star,seed,peak_r_star,peak_g,status,rdf_csv
+rahman,0.8177,0.7880,3001,1.085497,2.841458,PASS,/Users/vishnu/molecular/results/exp03_rdf_rahman.csv
+verlet,0.8442,0.7280,3002,1.074018,2.979668,PASS,/Users/vishnu/molecular/results/exp03_rdf_verlet.csv
