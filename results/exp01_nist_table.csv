@@ -1,5 +1,5 @@
 # command: /Users/vishnu/molecular/build/apps/moldyn_run --nist-config /Users/vishnu/molecular/data/nist/lj
-# git_sha: f76287d
+# git_sha: 36e379c-dirty
 # host: Darwin arm64
 # units: reduced Lennard-Jones units (sigma = epsilon = m = 1)
 # tolerance: per-value, half a unit in NIST's own 5th published significant figure

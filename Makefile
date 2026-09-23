@@ -1,4 +1,4 @@
-.PHONY: build test reproduce venv clean
+.PHONY: build test verify reproduce venv clean
 
 VENV := .venv
 VENV_PYTHON := $(VENV)/bin/python3
@@ -28,6 +28,21 @@ $(VENV_PYTHON):
 	fi
 
 venv: $(VENV_PYTHON)
+
+# The fast path. Everything here runs in well under a minute and needs no
+# Python: the unit suite, then the two experiments that gate the engine's
+# correctness -- the NIST reference table and the energy-conservation
+# order. This is what CI runs and what a reviewer should run first.
+#
+# `reproduce` below is the slow path: it re-runs every physics experiment
+# from scratch, which takes minutes, and is only needed to regenerate the
+# committed results rather than to check that they hold.
+verify: test
+	bash experiments/exp01_nist_table.sh
+	bash experiments/exp02_energy_conservation.sh
+	@echo
+	@echo "verify: unit suite + NIST reference table + conservation order all pass."
+	@echo "        run 'make reproduce' to regenerate every committed result (minutes)."
 
 reproduce: build venv
 	bash experiments/run_all.sh
