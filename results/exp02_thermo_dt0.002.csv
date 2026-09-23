@@ -1,5 +1,5 @@
 # command: /Users/vishnu/molecular/build/apps/moldyn_run --cells 3 --density 0.80 --temperature 1.0 --cutoff 2.5 --skin 0.4 --dt 0.002 --equilibrate 0 --production 500 --thermostat none --seed 12345 --truncation linear-force-shift --thermo-out /Users/vishnu/molecular/results/exp02_thermo_dt0.002.csv
-# git_sha: 36e379c-dirty
+# git_sha: 29c88d5
 # host: Darwin arm64
 # units: reduced Lennard-Jones units (sigma = epsilon = mass = kB = 1)
 # truncation: linear-force-shift
