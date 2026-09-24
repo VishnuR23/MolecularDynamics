@@ -4,6 +4,8 @@ set(MOLDYN_SOURCES
   core/system.cpp
   io/nist_config.cpp
   forcefield/lennard_jones.cpp
+  forcefield/ewald.cpp
+  forcefield/spce.cpp
   neighbor/cell_list.cpp
   neighbor/verlet_list.cpp
   integrate/velocity_verlet.cpp

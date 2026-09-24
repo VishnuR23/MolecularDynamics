@@ -6,6 +6,7 @@ set(MOLDYN_TEST_SOURCES
   test_system.cpp
   test_nist_config.cpp
   test_nist_lj.cpp
+  test_nist_spce.cpp
   test_forces.cpp
   test_neighbor.cpp
   test_integrator.cpp

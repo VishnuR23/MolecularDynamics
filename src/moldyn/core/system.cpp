@@ -15,6 +15,13 @@ const Box& System::box() const {
 }
 
 void System::addAtom(Vec3 position, Vec3 velocity, double mass) {
+    // Every atom defaults to its own molecule -- the id it gets is the
+    // index it is about to occupy, i.e. the size before this push.
+    addAtom(position, velocity, mass, 0.0, x_.size());
+}
+
+void System::addAtom(Vec3 position, Vec3 velocity, double mass, double charge,
+                      std::size_t moleculeId) {
     x_.push_back(position.x);
     y_.push_back(position.y);
     z_.push_back(position.z);
@@ -28,6 +35,8 @@ void System::addAtom(Vec3 position, Vec3 velocity, double mass) {
     fz_.push_back(0.0);
 
     mass_.push_back(mass);
+    charge_.push_back(charge);
+    moleculeId_.push_back(moleculeId);
 }
 
 void System::reserve(std::size_t n) {
@@ -44,6 +53,8 @@ void System::reserve(std::size_t n) {
     fz_.reserve(n);
 
     mass_.reserve(n);
+    charge_.reserve(n);
+    moleculeId_.reserve(n);
 }
 
 Vec3 System::position(std::size_t i) const {
@@ -60,6 +71,14 @@ Vec3 System::force(std::size_t i) const {
 
 double System::mass(std::size_t i) const {
     return mass_[i];
+}
+
+double System::charge(std::size_t i) const {
+    return charge_[i];
+}
+
+std::size_t System::moleculeId(std::size_t i) const {
+    return moleculeId_[i];
 }
 
 void System::setPosition(std::size_t i, Vec3 r) {
@@ -84,6 +103,14 @@ void System::addForce(std::size_t i, Vec3 f) {
     fx_[i] += f.x;
     fy_[i] += f.y;
     fz_[i] += f.z;
+}
+
+void System::setCharge(std::size_t i, double q) {
+    charge_[i] = q;
+}
+
+void System::setMoleculeId(std::size_t i, std::size_t moleculeId) {
+    moleculeId_[i] = moleculeId;
 }
 
 void System::zeroForces() {
@@ -139,6 +166,7 @@ void System::removeCenterOfMassMotion() {
 const double* System::xs() const { return x_.data(); }
 const double* System::ys() const { return y_.data(); }
 const double* System::zs() const { return z_.data(); }
+const double* System::qs() const { return charge_.data(); }
 
 double* System::fxs() { return fx_.data(); }
 double* System::fys() { return fy_.data(); }
