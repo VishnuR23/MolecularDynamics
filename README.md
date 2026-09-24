@@ -7,7 +7,7 @@ file, and checked by an assertion that fails the build if it stops holding.
 
 ```
 git clone https://github.com/VishnuR23/MolecularDynamics && cd MolecularDynamics
-make verify        # ~15 seconds, no Python required
+make verify        # builds and checks: ~25 s from a cold clone, no Python required
 ```
 
 ---
@@ -100,7 +100,7 @@ moved.
 ## Reproducing
 
 ```
-make verify       # unit suite + the two correctness gates      ~15 s
+make verify       # unit suite + the two correctness gates      ~15 s (~25 s cold)
 make reproduce    # re-runs every experiment and figure         ~11 min
 make test         # unit suite only                             ~14 s
 ```
