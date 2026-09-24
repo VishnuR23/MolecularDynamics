@@ -1,5 +1,6 @@
 #include "moldyn/forcefield/ewald.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <unordered_map>

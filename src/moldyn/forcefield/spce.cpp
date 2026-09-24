@@ -1,5 +1,6 @@
 #include "moldyn/forcefield/spce.hpp"
 
+#include <cstddef>
 #include <stdexcept>
 
 namespace moldyn {

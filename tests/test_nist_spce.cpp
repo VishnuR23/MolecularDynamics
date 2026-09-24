@@ -7,6 +7,7 @@
 #include "moldyn/forcefield/spce.hpp"
 #include "moldyn/io/nist_config.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <string>
