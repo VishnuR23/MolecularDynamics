@@ -183,4 +183,8 @@ EwaldTerms Ewald::computeForces(System& sys) const {
     return compute<true>(sys, &sys);
 }
 
+EwaldTerms Ewald::accumulateForces(System& sys) const {
+    return compute<true>(sys, &sys);
+}
+
 }  // namespace moldyn

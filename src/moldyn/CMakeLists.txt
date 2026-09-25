@@ -1,5 +1,7 @@
 # Source files are appended here as each task lands.
 set(MOLDYN_SOURCES
+  forcefield/spce_forcefield.cpp
+  constrain/rigid_water.cpp
   core/box.cpp
   core/system.cpp
   io/nist_config.cpp

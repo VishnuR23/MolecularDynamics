@@ -59,6 +59,11 @@ public:
     // computeEnergies().
     EwaldTerms computeForces(System& sys) const;
 
+    // The same, but accumulating onto whatever forces are already present.
+    // SPC/E needs this: dispersion and electrostatics are separate terms of
+    // one interaction, so one of them has to add rather than replace.
+    EwaldTerms accumulateForces(System& sys) const;
+
     double cutoff() const;
     int kmax() const;
 
