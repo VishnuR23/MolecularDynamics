@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "moldyn/constrain/rigid_water.hpp"
+#include "moldyn/integrate/constrained_velocity_verlet.hpp"
 #include "moldyn/core/box.hpp"
 #include "moldyn/core/system.hpp"
 #include "moldyn/core/units.hpp"
@@ -46,36 +47,6 @@ double worstGeometryError(const System& sys, const RigidWater& rw) {
         }
     }
     return worst;
-}
-
-// One constrained velocity-Verlet step (RATTLE form). The position reset also
-// corrects the half-step velocity -- omitting that correction is a classic
-// error that leaves the geometry rigid while quietly breaking conservation.
-template <class ForceFn>
-void constrainedStep(System& sys, double dt, const RigidWater& rw, ForceFn&& forces) {
-    const std::size_t n = sys.size();
-    std::vector<Vec3> reference(n);
-    for (std::size_t i = 0; i < n; ++i) {
-        reference[i] = sys.position(i);
-    }
-    for (std::size_t i = 0; i < n; ++i) {
-        sys.setVelocity(i, sys.velocity(i) + sys.force(i) * (0.5 * dt / sys.mass(i)));
-    }
-    std::vector<Vec3> unconstrained(n);
-    for (std::size_t i = 0; i < n; ++i) {
-        sys.setPosition(i, sys.position(i) + sys.velocity(i) * dt);
-        unconstrained[i] = sys.position(i);
-    }
-    rw.constrainPositions(sys, reference);
-    for (std::size_t i = 0; i < n; ++i) {
-        const Vec3 shift = sys.box().minimumImage(sys.position(i) - unconstrained[i]);
-        sys.setVelocity(i, sys.velocity(i) + shift * (1.0 / dt));
-    }
-    forces(sys);
-    for (std::size_t i = 0; i < n; ++i) {
-        sys.setVelocity(i, sys.velocity(i) + sys.force(i) * (0.5 * dt / sys.mass(i)));
-    }
-    rw.constrainVelocities(sys);
 }
 
 }  // namespace
@@ -169,9 +140,10 @@ TEST_CASE("geometry is held over a trajectory under real forces") {
     forces(w.full);
 
     const double dt = units::femtoseconds(2.0);
+    ConstrainedVelocityVerlet integrator(dt, rw);
     double worst = 0.0;
     for (int step = 0; step < 50; ++step) {
-        constrainedStep(w.full, dt, rw, forces);
+        integrator.step(w.full, forces);
         worst = std::max(worst, worstGeometryError(w.full, rw));
     }
     CAPTURE(worst);
@@ -239,13 +211,14 @@ TEST_CASE("energy error still scales as dt^2 with constraints active") {
         rw.constrainVelocities(w.full);
 
         const double dt = units::femtoseconds(fs);
+        ConstrainedVelocityVerlet integrator(dt, rw);
         double pe = forces(w.full);
         const double e0 = pe + w.full.kineticEnergy();
 
         double maxDev = 0.0;
         const int steps = static_cast<int>(std::lround(totalTimeFs / fs));
         for (int n = 0; n < steps; ++n) {
-            constrainedStep(w.full, dt, rw, forces);
+            integrator.step(w.full, forces);
             pe = forces(w.full);
             maxDev = std::max(maxDev, std::abs(pe + w.full.kineticEnergy() - e0));
         }

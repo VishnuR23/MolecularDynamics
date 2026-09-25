@@ -28,3 +28,9 @@ add_custom_target(moldyn_git_sha
 
 add_dependencies(moldyn_run moldyn_git_sha)
 target_include_directories(moldyn_run PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/generated)
+
+# The water structure experiment. Same provenance wiring as moldyn_run.
+add_executable(water_rdf water_rdf.cpp)
+target_link_libraries(water_rdf PRIVATE moldyn moldyn_warnings)
+add_dependencies(water_rdf moldyn_git_sha)
+target_include_directories(water_rdf PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/generated)
